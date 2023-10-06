@@ -1,0 +1,13 @@
+class_name DialogueResponse extends Resource
+
+var text: String = ""
+var choices: Array[String] = []
+
+func append_text(_text: String):
+	text += _text
+
+func append_choice(_choice: String):
+	choices.push_back(_choice)
+	
+func is_empty():
+	return text.length() == 0 && choices.size() == 0

@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://djbs5gdlgho83"]
+
+[node name="DialogueGraphNode" type="GraphNode"]
+offset_left = 219.0
+offset_top = 178.0
+offset_right = 255.0
+offset_bottom = 232.0
+mouse_filter = 1
+position_offset = Vector2(219, 178)
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = false
+
+[node name="Container" type="Container" parent="."]
+layout_mode = 2

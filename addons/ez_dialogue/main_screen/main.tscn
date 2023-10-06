@@ -1,0 +1,140 @@
+[gd_scene load_steps=5 format=3 uid="uid://c4h2pps361nfk"]
+
+[ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/main_panel.gd" id="1_qjims"]
+[ext_resource type="FontFile" uid="uid://c0825tvgqf6o" path="res://addons/ez_dialogue/main_screen/ProggyVector Regular.ttf" id="2_hauah"]
+[ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/ezd_syntax.gd" id="3_ew0wp"]
+
+[sub_resource type="SyntaxHighlighter" id="SyntaxHighlighter_wv4br"]
+script = ExtResource("3_ew0wp")
+textColor = Color(0.85098, 0.592157, 0.254902, 1)
+specialColor = Color(0.317647, 0.6, 0.878431, 1)
+constantColor = Color(0.721569, 0.243137, 0.243137, 1)
+operatorColor = Color(0.447059, 0.815686, 0.878431, 1)
+metadata/_editor_prop_ptr_textColor = NodePath("")
+
+[node name="main" type="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_qjims")
+
+[node name="SaveFileDialog" type="FileDialog" parent="."]
+initial_position = 2
+size = Vector2i(500, 500)
+unresizable = true
+ok_button_text = "Save"
+filters = PackedStringArray("*.json")
+
+[node name="OpenFileDialog" type="FileDialog" parent="."]
+title = "Open a File"
+initial_position = 2
+size = Vector2i(500, 500)
+unresizable = true
+ok_button_text = "Open"
+file_mode = 0
+filters = PackedStringArray("*.json")
+
+[node name="HSplitContainer" type="HSplitContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="graph_container" type="VBoxContainer" parent="HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HSplitContainer/graph_container"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="add" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "+"
+
+[node name="remove" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "-"
+
+[node name="new" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
+layout_mode = 2
+text = "New"
+
+[node name="save" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
+layout_mode = 2
+text = "Save"
+
+[node name="open" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
+layout_mode = 2
+text = "Open"
+
+[node name="fileNameLbl" type="Label" parent="HSplitContainer/graph_container/HBoxContainer"]
+layout_mode = 2
+text = "[no_name]"
+
+[node name="dirty_marker" type="Label" parent="HSplitContainer/graph_container/HBoxContainer"]
+visible = false
+layout_mode = 2
+text = "*"
+
+[node name="draw_container" type="GraphEdit" parent="HSplitContainer/graph_container"]
+layout_mode = 2
+size_flags_vertical = 3
+use_snap = false
+
+[node name="edit_container" type="VBoxContainer" parent="HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="name_editor" type="LineEdit" parent="HSplitContainer/edit_container"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+placeholder_text = "dialogue node name"
+editable = false
+
+[node name="content_editor" type="CodeEdit" parent="HSplitContainer/edit_container"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+size_flags_stretch_ratio = 15.0
+theme_override_fonts/font = ExtResource("2_hauah")
+theme_override_font_sizes/font_size = 15
+placeholder_text = "content goes here"
+editable = false
+highlight_current_line = true
+draw_control_chars = true
+draw_tabs = true
+draw_spaces = true
+syntax_highlighter = SubResource("SyntaxHighlighter_wv4br")
+caret_blink = true
+gutters_draw_line_numbers = true
+gutters_zero_pad_line_numbers = true
+indent_use_spaces = true
+auto_brace_completion_enabled = true
+
+[connection signal="working_path_changed" from="." to="." method="_on_working_path_changed"]
+[connection signal="file_selected" from="SaveFileDialog" to="." method="_on_save_file_dialog_file_selected"]
+[connection signal="file_selected" from="OpenFileDialog" to="." method="_on_open_file_dialog_file_selected"]
+[connection signal="pressed" from="HSplitContainer/graph_container/HBoxContainer/add" to="." method="_on_add_pressed"]
+[connection signal="pressed" from="HSplitContainer/graph_container/HBoxContainer/remove" to="." method="_on_remove_pressed"]
+[connection signal="pressed" from="HSplitContainer/graph_container/HBoxContainer/new" to="." method="_on_new_pressed"]
+[connection signal="pressed" from="HSplitContainer/graph_container/HBoxContainer/save" to="." method="_on_save_pressed"]
+[connection signal="pressed" from="HSplitContainer/graph_container/HBoxContainer/open" to="." method="_on_open_pressed"]
+[connection signal="end_node_move" from="HSplitContainer/graph_container/draw_container" to="." method="_on_draw_container_end_node_move"]
+[connection signal="node_deselected" from="HSplitContainer/graph_container/draw_container" to="." method="_on_draw_container_node_deselected"]
+[connection signal="node_selected" from="HSplitContainer/graph_container/draw_container" to="." method="_on_draw_container_node_selected"]
+[connection signal="text_changed" from="HSplitContainer/edit_container/name_editor" to="." method="_on_name_editor_text_changed"]
+[connection signal="text_changed" from="HSplitContainer/edit_container/content_editor" to="." method="_on_content_editor_text_changed"]
