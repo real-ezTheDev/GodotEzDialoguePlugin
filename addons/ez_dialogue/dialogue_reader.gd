@@ -33,6 +33,8 @@ func _process(delta):
 		while is_running:
 			if _executing_command_stack.is_empty():
 				is_running = false
+				if _pending_choice_actions.is_empty():
+					end_of_dialogue_reached.emit()
 				break
 				
 			_process_command(_executing_command_stack.pop_front(), response)
@@ -76,7 +78,7 @@ func _load_dialogue(dialogue: JSON):
 ## a choice, this parameter is ignored and the next dialogue is processed.
 # Provide choice index from the response if relevant.
 func next(choice_index: int = 0):
-	if !is_running:
+	if is_running:
 		return
 		
 	if choice_index >= 0 && choice_index < _pending_choice_actions.size():
@@ -118,8 +120,11 @@ func _process_command(command: DialogueCommand, response: DialogueResponse):
 			requiredVariables.push_back(result.get_string(1))
 		
 		for variable in requiredVariables:
+			var value = _stateReference.get(variable)
+			if not value is String:
+				value = str(value)
 			displayText = displayText.replace(
-				"${%s}"%variable, _stateReference.get(variable))
+				"${%s}"%variable, value)
 
 		# normal text display
 		response.append_text(displayText)
@@ -167,8 +172,8 @@ func _evaluate_conditional_expression(expression: String):
 	var availableVariables: Array[String] = []
 	var variableValues = []
 	for property in properties:
-		availableVariables.push_back(property["name"])
-		variableValues.push_back(_stateReference.get(property["name"]))
+		availableVariables.push_back(property)
+		variableValues.push_back(_stateReference.get(property))
 	
 	evaluation.parse(expression, PackedStringArray(availableVariables))
 	return evaluation.execute(variableValues, null, true)

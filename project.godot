@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="EzDialogue"
+run/main_scene="res://crpg_dialogue_demo/BaldursGate.tscn"
 config/features=PackedStringArray("4.1", "Forward Plus")
 config/icon="res://addons/ez_dialogue/icon.png"
 

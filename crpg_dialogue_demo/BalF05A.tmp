@@ -1,0 +1,45 @@
+[gd_scene load_steps=5 format=3 uid="uid://wncr0vtsnfw7"]
+
+[ext_resource type="Texture2D" uid="uid://dwuev61lv2d12" path="res://demo/baby..baby-girl...-800x445.jpg" id="1_dpfxq"]
+[ext_resource type="Script" path="res://addons/ez_dialogue/ez_dialogue_node.gd" id="2_rfik5"]
+[ext_resource type="Script" path="res://demo/DialogueBox.gd" id="3_1qepw"]
+[ext_resource type="JSON" path="res://demo/sample_dialogue.json" id="4_5owev"]
+
+[node name="BaldursGate" type="Node2D"]
+
+[node name="Background" type="Sprite2D" parent="."]
+position = Vector2(574, 327)
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("1_dpfxq")
+
+[node name="DialogueBox" type="VBoxContainer" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 43.0
+offset_top = 464.0
+offset_right = 1123.0
+offset_bottom = 628.0
+grow_horizontal = 2
+grow_vertical = 0
+alignment = 2
+script = ExtResource("3_1qepw")
+dialogue = ExtResource("4_5owev")
+
+[node name="text" type="Label" parent="DialogueBox"]
+layout_mode = 2
+text = "testsetset
+asdfsdfasdfasdfasdf
+asdfasdfasdfdasdfasdf
+asdfasdf"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="EzDialogue" type="Node" parent="DialogueBox"]
+script = ExtResource("2_rfik5")
+
+[connection signal="dialogue_generated" from="DialogueBox/EzDialogue" to="DialogueBox" method="_on_ez_dialogue_dialogue_generated"]
+[connection signal="end_of_dialogue_reached" from="DialogueBox/EzDialogue" to="DialogueBox" method="_on_ez_dialogue_end_of_dialogue_reached"]

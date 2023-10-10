@@ -1,0 +1,99 @@
+[gd_scene load_steps=8 format=3 uid="uid://jxxxpejmg7i2"]
+
+[ext_resource type="Texture2D" uid="uid://dwuev61lv2d12" path="res://crpg_dialogue_demo/baby..baby-girl...-800x445.jpg" id="1_oap7i"]
+[ext_resource type="Script" path="res://crpg_dialogue_demo/RollBox.gd" id="2_gl5rf"]
+[ext_resource type="Script" path="res://crpg_dialogue_demo/DialogueBox.gd" id="3_bwnhg"]
+[ext_resource type="JSON" path="res://crpg_dialogue_demo/sample_dialogue.json" id="4_3jik3"]
+[ext_resource type="Script" path="res://addons/ez_dialogue/ez_dialogue_node.gd" id="5_wktls"]
+
+[sub_resource type="Gradient" id="Gradient_d36n3"]
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_57a6p"]
+gradient = SubResource("Gradient_d36n3")
+width = 252
+height = 252
+fill_to = Vector2(0, 1)
+
+[node name="BaldursGate" type="Node2D"]
+
+[node name="Background" type="Sprite2D" parent="."]
+position = Vector2(574, 327)
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("1_oap7i")
+
+[node name="RollBox" type="Node2D" parent="."]
+visible = false
+position = Vector2(517, 155)
+script = ExtResource("2_gl5rf")
+
+[node name="TextureRect" type="TextureRect" parent="RollBox"]
+offset_left = -67.0
+offset_top = -5.0
+offset_right = 185.0
+offset_bottom = 247.0
+texture = SubResource("GradientTexture2D_57a6p")
+
+[node name="CheckName" type="Label" parent="RollBox"]
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Dexterity Check"
+
+[node name="DifficultyClass" type="Label" parent="RollBox"]
+offset_left = 27.0
+offset_top = 55.0
+offset_right = 97.0
+offset_bottom = 107.0
+text = "Difficulty
+Class"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DCNumber" type="Label" parent="RollBox"]
+offset_left = 54.0
+offset_top = 115.0
+offset_right = 94.0
+offset_bottom = 141.0
+text = "20
+"
+
+[node name="Button" type="Button" parent="RollBox"]
+offset_left = 16.0
+offset_top = 180.0
+offset_right = 114.0
+offset_bottom = 211.0
+text = "Click to Roll"
+
+[node name="DialogueBox" type="VBoxContainer" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 43.0
+offset_top = 464.0
+offset_right = 1123.0
+offset_bottom = 628.0
+grow_horizontal = 2
+grow_vertical = 0
+alignment = 2
+script = ExtResource("3_bwnhg")
+dialogue = ExtResource("4_3jik3")
+
+[node name="text" type="Label" parent="DialogueBox"]
+layout_mode = 2
+text = "testsetset
+asdfsdfasdfasdfasdf
+asdfasdfasdfdasdfasdf
+asdfasdf"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="EzDialogue" type="Node" parent="DialogueBox"]
+script = ExtResource("5_wktls")
+
+[connection signal="roll_finished" from="RollBox" to="DialogueBox" method="_on_roll_box_roll_finished"]
+[connection signal="pressed" from="RollBox/Button" to="RollBox" method="_on_button_pressed"]
+[connection signal="custom_signal_received" from="DialogueBox/EzDialogue" to="DialogueBox" method="_on_ez_dialogue_custom_signal_received"]
+[connection signal="dialogue_generated" from="DialogueBox/EzDialogue" to="DialogueBox" method="_on_ez_dialogue_dialogue_generated"]
+[connection signal="end_of_dialogue_reached" from="DialogueBox/EzDialogue" to="DialogueBox" method="_on_ez_dialogue_end_of_dialogue_reached"]
