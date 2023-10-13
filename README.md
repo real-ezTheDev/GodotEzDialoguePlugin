@@ -20,7 +20,8 @@ EzDialogue plugin has only been tested with Godot v4.0+
 To begin writing your dialogue, go to `EzDialogue` tab.
 
 ### Dialogue Node
-Create a dialogue node by click on `+` on the top left corner of the dialogue editor window.
+Create a dialogue node by clicking the `+` on the top left corner of the dialogue editor window.
+!["+" button in editor](https://https://github.com/real-ezTheDev/GodotEzDialoguePlugin/blob/dev/readme_src/add_diag_node_button.png?raw=true)
 
 Once you select the node (the created Dialogue Node should be alrady selected), the right panel should enable where you can edit the Dialogue Node name and the content of the node.
 
@@ -32,6 +33,11 @@ By `default`, You should name the starting node `Start`.
 
 #### Plain Text
 You can simply start writing your plain text dialogue.
+
+#### Variable Injection in Text
+You can inject the value of variable defined in the state `Dictionary` within the text by surrounding the varaible name with `{}`
+
+#### Conditional
 
 ### How to Load Dialogue in Game
 
