@@ -38,6 +38,7 @@ You can simply start writing your plain text dialogue in the content section of 
 
 #### Variable Injection in Text
 You can inject the value of variable defined in the state `Dictionary` within the text by surrounding the varaible name with `${variable_name}`
+
 ![click on node to edit its content](https://github.com/real-ezTheDev/GodotEzDialoguePlugin/blob/dev/readme_src/variable_dialogue_example.png?raw=true)
 
 ### Flow Control and Branching
