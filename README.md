@@ -95,6 +95,24 @@ setting values of the variable,
 triggering animation/effect/sound,
 and etc.
 
+### Escape Commands
+You can escape any of the above "special" reserved commands and words with a single backslash to display them as plain text.
+
+For example the following dialogue script:
+```
+\$if you wish to see me {
+    call me.
+}
+```
+
+would be displayed as:
+
+"$if you wish to see me {
+    call me.
+}"
+
+instead of being interpretted as `$if` command.
+
 ### How to Load Dialogue in Game
 
 This section is an instruction on how you can load and use the dialogue resource created from `EzDialogue` editor tab.
