@@ -8,6 +8,10 @@ The Plugin provides ways to create and organize in-game dialogues by providing c
 
 EzDialogue plugin has only been tested with Godot v4.0+
 
+## Video Tutorial
+
+Click [here](https://youtu.be/WVflfiKjXgk) for video tutorial/demo.
+
 ## Installation
 
 1. Copy the directory `./addon/ez-dialogue` to your Godot Project resource path `res://addon/`
