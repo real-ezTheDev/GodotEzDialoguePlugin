@@ -127,7 +127,7 @@ func _process_command(command: DialogueCommand, response: DialogueResponse):
 				"${%s}"%variable, value)
 
 		# normal text display
-		response.append_text(displayText)
+		response.append_text(displayText + "\n")
 	elif command.type == DialogueCommand.CommandType.PAGE_BREAK:
 		# page break. stop processing until further user input
 		is_running = false
