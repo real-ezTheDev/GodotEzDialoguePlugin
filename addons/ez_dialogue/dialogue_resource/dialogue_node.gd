@@ -78,7 +78,20 @@ func _parse_statement(i: int, raw: String, parseProgress: Array[DialogueCommand]
 
 	var currentLine = raw.count("\n", 0, max(i, 1)) + 1
 	var inLinePos = i - raw.substr(0, i).rfind("\n") - 1
-	if _peek_and_match("?>", i, raw):
+	if _peek_and_match("\\", i, raw):
+		# escape character "\" detected, store following letter as plain text.
+		if i + 1 >= raw.length():
+			# out of bound, next letter is not availalbe.
+			return i + 1
+
+		_add_letters_progress(
+			raw[i] + raw[i+1],
+			parseProgress[0].children,
+			currentLine,
+			inLinePos,
+			DialogueCommand.CommandType.DISPLAY_TEXT)
+		return i + 2
+	elif _peek_and_match("?>", i, raw):
 		# prompt can take either bracket { } as child or directly take goto (->)
 		var promptParseProgress: Array[DialogueCommand] = []
 		var terminating = RegEx.new()
