@@ -93,45 +93,18 @@ func _parse_statement(i: int, raw: String, parseProgress: Array[DialogueCommand]
 		return i + 2
 	elif _peek_and_match("?>", i, raw):
 		# prompt can take either bracket { } as child or directly take goto (->)
-		var promptParseProgress: Array[DialogueCommand] = []
-		var terminating = RegEx.new()
-		terminating.compile("->|{")
-		var promptText = _collect_characters(i+2, raw, terminating)
-		var nextIndex = i + 2 + promptText.length()
-		var promptChildren: Array[DialogueCommand] = []
-		var result = DialogueCommand.new(
+		var prompt_command = DialogueCommand.new(
 			currentLine,
 			inLinePos,
 			DialogueCommand.CommandType.PROMPT,
-			[promptText],
-			promptChildren)
-		parseProgress[0].children.push_back(result)
+			[""],
+			[])
+		var next_index = _parse_prompt_command(i + 2 , raw, prompt_command)
+		parseProgress[0].children.push_back(prompt_command)
+		if prompt_command.children.size() > 0 && prompt_command.children[0].type == DialogueCommand.CommandType.BRACKET:
+			parseProgress.push_front(prompt_command.children[0])
 		
-		var end_position = _get_position_from_index(nextIndex, raw)
-		if _is_bracket_start(nextIndex, raw):
-			var bracket = DialogueCommand.new(
-				end_position["line"],
-				end_position["pos"],
-				DialogueCommand.CommandType.BRACKET
-			)
-			promptChildren.push_back(bracket)
-			parseProgress.push_front(bracket)
-			nextIndex += 1
-		elif _peek_and_match("->", nextIndex, raw):
-			var gotoTerm = RegEx.new()
-			gotoTerm.compile("\\n")
-			var gotoNodeName = _collect_characters(nextIndex+2, raw, gotoTerm)
-			var gotoCommand = DialogueCommand.new(
-				end_position["line"],
-				end_position["pos"],
-				DialogueCommand.CommandType.GOTO,
-				[gotoNodeName])
-			promptChildren.push_back(gotoCommand)
-			nextIndex += 2 + gotoNodeName.length()
-		else:
-			printerr(
-				"Error at (line: %d, pos: %d): Expected '{' or '->' at the end of '?> [prompt]'" % [end_position["line"], end_position["pos"]])
-		return nextIndex
+		return next_index
 	elif _peek_and_match("->", i, raw):
 		var terminating = RegEx.new()
 		terminating.compile("\\n")
@@ -302,6 +275,53 @@ func _parse_statement(i: int, raw: String, parseProgress: Array[DialogueCommand]
 			raw[i], parseProgress[0].children, currentLine, inLinePos, DialogueCommand.CommandType.DISPLAY_TEXT)
 		return i + 1
 
+# Parse for children / value components of a PROMPT command.
+func _parse_prompt_command(i: int, raw: String, promptCommand: DialogueCommand):
+	# collect as DISPLAY_TEXT the prompt statement and terminate prompt parsing on bracket or GOTO.
+	if i >= raw.length():
+		return i
+
+	var character_pos = _get_position_from_index(i, raw)
+	if _peek_and_match("\\", i, raw):
+		# escape character "\" detected, store following letter as plain text.
+		if i + 1 >= raw.length():
+			# out of bound, next letter is not availalbe.
+			return i + 1
+		
+		promptCommand.values[0] += raw[i] + raw[i+1]
+		return _parse_prompt_command(i + 2, raw, promptCommand)
+	elif _peek_and_match("${", i, raw):
+		pass
+	elif _peek_and_match("{", i , raw):
+		var bracket = DialogueCommand.new(
+			character_pos["line"],
+			character_pos["pos"],
+			DialogueCommand.CommandType.BRACKET
+		)
+		promptCommand.children.push_back(bracket)
+		return i + 1
+	elif _peek_and_match("->", i, raw):
+		var gotoTerm = RegEx.new()
+		gotoTerm.compile("\\n")
+		var gotoNodeName = _collect_characters(i+2, raw, gotoTerm)
+		var gotoCommand = DialogueCommand.new(
+			character_pos["line"],
+			character_pos["pos"],
+			DialogueCommand.CommandType.GOTO,
+			[gotoNodeName])
+		promptCommand.children.push_back(gotoCommand)
+		return i + 2 + gotoNodeName.length()
+	
+	var variableInjectRegex = RegEx.new()
+	variableInjectRegex.compile("\\${\\S+?}")
+	var varInjectMatch = variableInjectRegex.search(raw, i)
+	if varInjectMatch && varInjectMatch.get_start() == i:
+		promptCommand.values[0] += varInjectMatch.get_string()
+		return _parse_prompt_command(i + varInjectMatch.get_string().length(), raw, promptCommand)
+	else:
+		promptCommand.values[0] += raw[i]
+		return _parse_prompt_command(i + 1, raw, promptCommand)
+	
 # Collect values in raw String starting from 'starting' index until 'terminating' character is found.
 func _collect_characters(starting: int, raw: String, terminating: RegEx):
 	var result = ""

@@ -108,24 +108,7 @@ func _process_command(command: DialogueCommand, response: DialogueResponse):
 		front.append_array(_executing_command_stack)
 		_executing_command_stack = front
 	elif command.type == DialogueCommand.CommandType.DISPLAY_TEXT:
-		var displayText: String = command.values[0].strip_edges(true,true)
-		
-		# replacing variable placeholders
-		var requiredVariables: Array[String] = []
-		var variablePlaceholderRegex = RegEx.new()
-		variablePlaceholderRegex.compile("\\${(\\S+?)}")
-		
-		var matchResults = variablePlaceholderRegex.search_all(displayText)
-		for result in matchResults:
-			requiredVariables.push_back(result.get_string(1))
-		
-		for variable in requiredVariables:
-			var value = _stateReference.get(variable)
-			if not value is String:
-				value = str(value)
-			displayText = displayText.replace(
-				"${%s}"%variable, value)
-
+		var displayText: String = _inject_variable_to_text(command.values[0].strip_edges(true,true))
 		# normal text display
 		response.append_text(displayText + "\n")
 	elif command.type == DialogueCommand.CommandType.PAGE_BREAK:
@@ -134,7 +117,7 @@ func _process_command(command: DialogueCommand, response: DialogueResponse):
 	elif command.type == DialogueCommand.CommandType.PROMPT:
 		# choice item
 		var actions: Array[DialogueCommand] = []
-		var prompt: String = command.values[0]
+		var prompt: String = _inject_variable_to_text(command.values[0])
 		actions.append_array(command.children)
 		response.append_choice(prompt)
 		_pending_choice_actions.push_back(actions)
@@ -158,6 +141,24 @@ func _process_command(command: DialogueCommand, response: DialogueResponse):
 			_queue_executing_commands(command.children)
 	elif command.type == DialogueCommand.CommandType.ELSE:
 		_queue_executing_commands(command.children)
+		
+func _inject_variable_to_text(text: String):
+		# replacing variable placeholders
+		var requiredVariables: Array[String] = []
+		var variablePlaceholderRegex = RegEx.new()
+		variablePlaceholderRegex.compile("\\${(\\S+?)}")
+		var final_text = text
+		var matchResults = variablePlaceholderRegex.search_all(final_text)
+		for result in matchResults:
+			requiredVariables.push_back(result.get_string(1))
+		
+		for variable in requiredVariables:
+			var value = _stateReference.get(variable)
+			if not value is String:
+				value = str(value)
+			final_text = final_text.replace(
+				"${%s}"%variable, value)
+		return final_text
 
 func _queue_executing_commands(commands: Array[DialogueCommand]):
 	var copy = commands.duplicate(true)
