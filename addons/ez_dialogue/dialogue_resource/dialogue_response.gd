@@ -4,7 +4,10 @@ var text: String = ""
 var choices: Array[String] = []
 
 func append_text(_text: String):
-	text += _text
+	if (!text.is_empty()):
+		text += "\n" + _text
+	else:
+		text += _text
 
 func append_choice(_choice: String):
 	choices.push_back(_choice)
