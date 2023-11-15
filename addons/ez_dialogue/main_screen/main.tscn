@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://c4h2pps361nfk"]
 
 [ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/main_panel.gd" id="1_qjims"]
-[ext_resource type="FontFile" uid="uid://c0825tvgqf6o" path="res://addons/ez_dialogue/main_screen/ProggyVector Regular.ttf" id="2_hauah"]
+[ext_resource type="FontFile" uid="uid://buwm2t0sdxgw" path="res://addons/ez_dialogue/main_screen/ProggyVector Regular.ttf" id="2_hauah"]
 [ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/ezd_syntax.gd" id="3_ew0wp"]
 
 [sub_resource type="SyntaxHighlighter" id="SyntaxHighlighter_wv4br"]

@@ -17,6 +17,9 @@ var selectedDialogueNode: DialogueNode
 var selectedGraphNodes: Array[GraphNode]
 
 @onready var dialogueGraphNodePrefab = preload("res://addons/ez_dialogue/main_screen/dialogue_graph_node.tscn")
+@onready var last_parse_updated_time = 0
+
+const PARSE_UPDATE_WAIT_TIME_IN_MS = 3000
 
 func _init_state():
 	dialogueNodes = []
@@ -40,7 +43,7 @@ func _mark_saved():
 func save(force_save: bool = false):
 	if !_is_dirty() && !force_save:
 		return
-		
+	_update_parse()
 	if workingPath.is_empty():
 		$SaveFileDialog.popup()
 	else:
@@ -56,8 +59,15 @@ func reset():
 	for childNode in draw_surface.get_children():
 		draw_surface.remove_child(childNode)
 	_init_state()
-	_populate_eidtor_from_selections([])
+	_populate_editor_from_selections([])
 	#_mark_dirty()
+	
+func _process(delta):
+	# update parse if hasn't been updated in set time.
+	var time_since_last_update = Time.get_ticks_msec() - last_parse_updated_time
+	if time_since_last_update - PARSE_UPDATE_WAIT_TIME_IN_MS > 0:
+		_update_parse()
+		last_parse_updated_time = Time.get_ticks_msec()
 
 func _record_connection_tracker(_from: String, _to: String):
 	var from = _from.to_lower()
@@ -102,7 +112,7 @@ func _add_dialogue_node_graph(dialogue: DialogueNode, focus = false, position = 
 		node.position_offset = draw_surface.scroll_offset + (draw_surface.size*0.5)
 	return node
 
-func _populate_eidtor_from_selections(selections: Array[GraphNode]):
+func _populate_editor_from_selections(selections: Array[GraphNode]):
 	# single node selection => edit node
 	if selections.size() == 1:
 		name_editor.editable = true
@@ -117,6 +127,8 @@ func _populate_eidtor_from_selections(selections: Array[GraphNode]):
 				selectedDialogueNode = dialogue
 				_populate_editor(dialogue)
 				break
+		
+		content_editor.syntax_highlighter.set_parsed_node(selectedDialogueNode)
 	
 	# 0 or multi-selection => deselect
 	else: 
@@ -215,27 +227,32 @@ func _on_name_editor_text_changed(new_text):
 func _on_content_editor_text_changed():
 	if content_editor.has_focus():
 		_mark_dirty()
-		var editingNodeName = selectedGraphNodes[0].name
-		var oldOuts = []
-		# Clean Old Output from Current Node Record
-		for out_node in selectedDialogueNode.get_destination_nodes():
-			oldOuts.push_back(out_node.to_lower())
-		nodeToOutputs.erase(editingNodeName.to_lower())
-
-		# update parse
 		selectedDialogueNode.commands_raw = content_editor.text
-		selectedDialogueNode.clear_parse()
-		for out_node in selectedDialogueNode.get_destination_nodes():
-			while oldOuts.has(out_node):
-				oldOuts.erase(out_node)
-					
-		for oldOut in oldOuts:
-			nodeToInputs[oldOut].erase(editingNodeName.to_lower())
-			if nodeToInputs[oldOut].is_empty():
-				nodeToInputs.erase(oldOut)
-				
-		_process_node_out_connection_on_graph(selectedDialogueNode)
 
+func _update_parse():
+	if selectedGraphNodes.is_empty():
+		return
+
+	var editingNodeName = selectedGraphNodes[0].name
+	var oldOuts = []
+	# Clean Old Output from Current Node Record
+	for out_node in selectedDialogueNode.get_destination_nodes():
+		oldOuts.push_back(out_node.to_lower())
+	nodeToOutputs.erase(editingNodeName.to_lower())
+
+	# update parsing of selected node
+	selectedDialogueNode.clear_parse()
+	for out_node in selectedDialogueNode.get_destination_nodes():
+		while oldOuts.has(out_node):
+			oldOuts.erase(out_node)
+				
+	for oldOut in oldOuts:
+		nodeToInputs[oldOut].erase(editingNodeName.to_lower())
+		if nodeToInputs[oldOut].is_empty():
+			nodeToInputs.erase(oldOut)
+
+	_process_node_out_connection_on_graph(selectedDialogueNode)
+	
 	if selectedDialogueNode:
 		content_editor.syntax_highlighter.set_parsed_node(selectedDialogueNode)
 
@@ -250,15 +267,16 @@ func _get_incoming_connection_names(graphNode: GraphNode):
 func _on_draw_container_node_selected(node):
 	selectedGraphNodes.push_front(node)
 	
-	_populate_eidtor_from_selections(selectedGraphNodes)
+	_populate_editor_from_selections(selectedGraphNodes)
 	_on_content_editor_text_changed()
 
 func _on_draw_container_node_deselected(node):
+	_update_parse()
 	var deselecting_i = selectedGraphNodes.find(node)
 	if deselecting_i >= 0:
 		selectedGraphNodes.remove_at(deselecting_i)
 		
-	_populate_eidtor_from_selections(selectedGraphNodes)
+	_populate_editor_from_selections(selectedGraphNodes)
 	
 func _on_draw_container_end_node_move():
 	for gnode in selectedGraphNodes:
@@ -295,7 +313,7 @@ func _on_open_file_dialog_file_selected(path):
 		_process_node_out_connection_on_graph(dialogue)
 
 	_mark_saved()
-	_populate_eidtor_from_selections(selectedGraphNodes)
+	_populate_editor_from_selections(selectedGraphNodes)
 	working_path_changed.emit(path)
 
 func _on_working_path_changed(path: String):
