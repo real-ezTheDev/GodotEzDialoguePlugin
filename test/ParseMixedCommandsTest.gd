@@ -8,10 +8,19 @@ func _ready():
 	print("Running plain_text_test_single_line...")
 	await _test_single_line_plain_text()
 	print("PASSED.")
+	
 	print("Running _test_multi_line_plain_text...")
 	await _test_multi_line_plain_text()
 	print("PASSED.")
-		
+	
+	print("Running _test_conditional_base_case...")
+	await _test_conditional_base_case()
+	print("PASSED.")
+	
+	print("Running _test_conditional_missing_variable...")
+	await _test_conditional_missing_variable()
+	print("PASSED.")
+
 func _test_single_line_plain_text():
 	var test_name = "plain_text_test_single_line"
 	dialogue_handler.start_dialogue(test_dialogue, {}, test_name)
@@ -21,6 +30,23 @@ func _test_multi_line_plain_text():
 	var test_name = "plain_text_test_multi_line"
 	dialogue_handler.start_dialogue(test_dialogue, {}, test_name)
 	await _assert_response("this is a multi line text.\nWhere the consequent lines are put parsed together.", [])
+
+func _test_conditional_base_case():
+	var test_name = "base_conditional_display"
+	
+	# conditional truthy
+	dialogue_handler.start_dialogue(test_dialogue, {"test_variable": true}, test_name)
+	await _assert_response("starting test.\nvariable is true.\npost conditional text pick up.", [])
+	
+	# conditional falsy
+	dialogue_handler.start_dialogue(test_dialogue, {"test_variable": false}, test_name)
+	await _assert_response("starting test.\nvariable is not true.\npost conditional text pick up.", [])
+
+func _test_conditional_missing_variable():
+	var test_name = "base_conditional_display"
+	dialogue_handler.start_dialogue(test_dialogue, {}, test_name)
+	
+	await _assert_response("starting test.\nvariable is not true.\npost conditional text pick up.", [])
 
 func _assert_custom_signal(param: String):
 	var signal_param = await dialogue_handler.custom_signal_received

@@ -176,5 +176,10 @@ func _evaluate_conditional_expression(expression: String):
 		availableVariables.push_back(property)
 		variableValues.push_back(_stateReference.get(property))
 	
-	evaluation.parse(expression, PackedStringArray(availableVariables))
-	return evaluation.execute(variableValues, null, true)
+	var parse_error = evaluation.parse(expression, PackedStringArray(availableVariables))
+	var result = evaluation.execute(variableValues)
+	if evaluation.has_execute_failed():
+		printerr("Conditional expression '%s' did not parse/execute correctly with state: %s"%[expression, variableValues])
+		# failed expression statement is assumed falsy.
+		return false
+	return result

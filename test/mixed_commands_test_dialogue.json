@@ -5,7 +5,7 @@
 		"name": "plain_text_test_single_line",
 		"position": [
 			104,
-			119
+			118
 		]
 	},
 	{
@@ -15,6 +15,15 @@
 		"position": [
 			107,
 			195
+		]
+	},
+	{
+		"commands_raw": "starting test.\n$if test_variable {\n    variable is true.\n}\n$else {\n    variable is not true.\n}\npost conditional text pick up.",
+		"id": 2,
+		"name": "base_conditional_display",
+		"position": [
+			110,
+			289.5
 		]
 	}
 ]
