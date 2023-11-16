@@ -223,17 +223,29 @@ func _on_new_pressed():
 ######################### EDITOR SIGNAL RESPONSES
 
 func _on_name_editor_text_changed(new_text):
+	
 	if name_editor.has_focus():
 		_mark_dirty()
 		var oldName = name_editor.text
 		var newName = new_text
-		
+			
 		nodeToOutputs.erase(oldName.to_lower())
 		
 		selectedDialogueNode.name = newName
 		selectedGraphNodes[0].name = newName.to_lower()
 		selectedGraphNodes[0].title = selectedDialogueNode.name + " #" + str(selectedDialogueNode.id)
 		selectedDialogueNode.gnode_name = selectedGraphNodes[0].name
+		
+		# error for existing name.
+		var existing_diag_node = _get_dialogue_node_by_name(newName)
+		if existing_diag_node.id != selectedDialogueNode.id:
+			printerr('Dialogue node name "%s" already exists. Could not resolve node connections.' % newName)
+			return
+
+		if new_text.is_empty():
+			printerr('Empty Dialogue node name found.')
+			return
+
 		# reconnect current Node to its output
 		_process_node_out_connection_on_graph(selectedDialogueNode)
 		
