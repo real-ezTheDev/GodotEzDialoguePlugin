@@ -91,6 +91,11 @@ func _get_dialogue_node_by_name(node_name: String):
 	for node in dialogueNodes:
 		if node.name.to_lower() == node_name.to_lower():
 			return node
+			
+func _get_dialogue_node_by_gnode_name(gnode_name: String):
+	for node in dialogueNodes:
+		if node.gnode_name == gnode_name:
+			return node
 
 func _add_dialogue_node(node_name = "Diag Node"):
 	var dialogue = DialogueNode.new()
@@ -121,6 +126,7 @@ func _add_dialogue_node_graph(dialogue: DialogueNode, focus = false, position = 
 		node.position_offset = position
 	else:
 		node.position_offset = draw_surface.scroll_offset + (draw_surface.size*0.5)
+	dialogue.gnode_name = node.name
 	return node
 
 func _populate_editor_from_selections(selections: Array[GraphNode]):
@@ -224,7 +230,7 @@ func _on_name_editor_text_changed(new_text):
 		selectedDialogueNode.name = newName
 		selectedGraphNodes[0].name = newName.to_lower()
 		selectedGraphNodes[0].title = selectedDialogueNode.name + " #" + str(selectedDialogueNode.id)
-		
+		selectedDialogueNode.gnode_name = selectedGraphNodes[0].name
 		# reconnect current Node to its output
 		_process_node_out_connection_on_graph(selectedDialogueNode)
 		
@@ -291,7 +297,7 @@ func _on_draw_container_node_deselected(node):
 	
 func _on_draw_container_end_node_move():
 	for gnode in selectedGraphNodes:
-		_get_dialogue_node_by_name(gnode.name).position = gnode.position_offset
+		_get_dialogue_node_by_gnode_name(gnode.name).position = gnode.position_offset
 	
 	_mark_dirty()
 

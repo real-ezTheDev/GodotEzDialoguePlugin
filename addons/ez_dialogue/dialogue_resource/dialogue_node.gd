@@ -3,6 +3,7 @@ class_name DialogueNode extends Resource
 
 var id: int = -1
 var name: String = ""
+var gnode_name: String = ""
 var commands_raw: String = ""
 var position: Vector2 = Vector2(0, 0)
 var _parsed: Array[DialogueCommand] = []
@@ -12,6 +13,7 @@ func serialize() -> String:
 	var res = {
 		"id": id,
 		"name": name,
+		"gnode_name": gnode_name,
 		"commands_raw": commands_raw,
 		"position": [position.x, position.y]
 	}
@@ -21,6 +23,10 @@ func serialize() -> String:
 func loadFromJson(jsonObj):
 	id = jsonObj["id"]
 	name = jsonObj["name"]
+	if jsonObj.has("gnode_name"):
+		gnode_name = jsonObj["gnode_name"]
+	else:
+		gnode_name = name
 	commands_raw = jsonObj["commands_raw"]
 	if jsonObj.has("position"):
 		position = Vector2(jsonObj["position"][0], jsonObj["position"][1])
