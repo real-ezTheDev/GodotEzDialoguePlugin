@@ -82,7 +82,12 @@ func _record_connection_tracker(_from: String, _to: String):
 	nodeToOutputs[from][to] = true
 	nodeToInputs[to][from] = true
 
-func _get_dialogue_node(node_name: String):
+func _get_dialogue_node_by_id (node_id: int):
+	for node in dialogueNodes:
+		if node.id == node_id:
+			return node
+	
+func _get_dialogue_node_by_name(node_name: String):
 	for node in dialogueNodes:
 		if node.name.to_lower() == node_name.to_lower():
 			return node
@@ -94,7 +99,13 @@ func _add_dialogue_node(node_name = "Diag Node"):
 		dialogue.id = 0
 	else:
 		dialogue.id = dialogueNodes[-1].id + 1
-		
+	
+	# attach number at the end (increasing by one) if the name already exists.
+	var repeat_count = 1
+	while (_get_dialogue_node_by_name(dialogue.name) != null):
+		dialogue.name = node_name + "_" + str(repeat_count)
+		repeat_count += 1
+	
 	dialogueNodes.push_back(dialogue)
 	return dialogue
 	
@@ -156,7 +167,7 @@ func _process_node_out_connection_on_graph(node: DialogueNode):
 		_remove_out_going_connection(node.name)
 		for out_node in node.get_destination_nodes():
 			_record_connection_tracker(node.name, out_node)
-			if _get_dialogue_node(out_node):
+			if _get_dialogue_node_by_name(out_node):
 				draw_surface.connect_node(node.name.to_lower(), 0, out_node, 0)
 
 func _remove_out_going_connection(nodeName: String):
@@ -220,7 +231,7 @@ func _on_name_editor_text_changed(new_text):
 		# reconnect existing connection from other nodes to the current node
 		if nodeToInputs.has(newName.to_lower()):
 			for inputNodeName in nodeToInputs[newName.to_lower()].keys():
-				var diagNode = _get_dialogue_node(inputNodeName)
+				var diagNode = _get_dialogue_node_by_name(inputNodeName)
 				if diagNode:
 					_process_node_out_connection_on_graph(diagNode)
 
@@ -280,7 +291,7 @@ func _on_draw_container_node_deselected(node):
 	
 func _on_draw_container_end_node_move():
 	for gnode in selectedGraphNodes:
-		_get_dialogue_node(gnode.name).position = gnode.position_offset
+		_get_dialogue_node_by_name(gnode.name).position = gnode.position_offset
 	
 	_mark_dirty()
 
