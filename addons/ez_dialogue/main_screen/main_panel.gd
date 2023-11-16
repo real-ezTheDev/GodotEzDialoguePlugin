@@ -172,13 +172,16 @@ func _populate_editor(dialogue: DialogueNode):
 func _process_node_out_connection_on_graph(node: DialogueNode):
 		_remove_out_going_connection(node.name)
 		for out_node in node.get_destination_nodes():
-			_record_connection_tracker(node.name, out_node)
-			if _get_dialogue_node_by_name(out_node):
-				draw_surface.connect_node(node.name.to_lower(), 0, out_node, 0)
+			var out_dialogue_node = _get_dialogue_node_by_name(out_node)
+			if out_dialogue_node:
+				_record_connection_tracker(node.name, out_dialogue_node.gnode_name)
+				draw_surface.connect_node(node.gnode_name.to_lower(), 0, out_dialogue_node.gnode_name, 0)
+			else:
+				_record_connection_tracker(node.name, out_node)
 
 func _remove_out_going_connection(nodeName: String):
 	for connection in draw_surface.get_connection_list():
-		if connection["from"] == nodeName:
+		if connection["from"] == nodeName.to_lower():
 			draw_surface.disconnect_node(nodeName.to_lower(), 0, connection["to"].to_lower(), 0)
 	
 ######################### UI SIGNAL RESPONSES
