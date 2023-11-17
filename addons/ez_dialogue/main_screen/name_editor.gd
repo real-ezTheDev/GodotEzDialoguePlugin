@@ -1,3 +1,4 @@
+@tool
 extends LineEdit
 
 signal name_changed(old_text: String, new_text: String)
