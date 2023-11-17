@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://c4h2pps361nfk"]
+[gd_scene load_steps=6 format=3 uid="uid://c4h2pps361nfk"]
 
 [ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/main_panel.gd" id="1_qjims"]
 [ext_resource type="FontFile" uid="uid://buwm2t0sdxgw" path="res://addons/ez_dialogue/main_screen/ProggyVector Regular.ttf" id="2_hauah"]
+[ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/name_editor.gd" id="2_tbf72"]
 [ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/ezd_syntax.gd" id="3_ew0wp"]
 
 [sub_resource type="SyntaxHighlighter" id="SyntaxHighlighter_wv4br"]
@@ -103,6 +104,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 placeholder_text = "dialogue node name"
 editable = false
+script = ExtResource("2_tbf72")
 
 [node name="content_editor" type="CodeEdit" parent="HSplitContainer/edit_container"]
 visible = false
@@ -136,5 +138,6 @@ auto_brace_completion_enabled = true
 [connection signal="end_node_move" from="HSplitContainer/graph_container/draw_container" to="." method="_on_draw_container_end_node_move"]
 [connection signal="node_deselected" from="HSplitContainer/graph_container/draw_container" to="." method="_on_draw_container_node_deselected"]
 [connection signal="node_selected" from="HSplitContainer/graph_container/draw_container" to="." method="_on_draw_container_node_selected"]
-[connection signal="text_changed" from="HSplitContainer/edit_container/name_editor" to="." method="_on_name_editor_text_changed"]
+[connection signal="name_changed" from="HSplitContainer/edit_container/name_editor" to="." method="_on_name_editor_name_changed"]
+[connection signal="text_changed" from="HSplitContainer/edit_container/name_editor" to="HSplitContainer/edit_container/name_editor" method="_on_text_changed"]
 [connection signal="text_changed" from="HSplitContainer/edit_container/content_editor" to="." method="_on_content_editor_text_changed"]

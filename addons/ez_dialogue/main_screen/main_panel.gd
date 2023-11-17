@@ -19,7 +19,7 @@ var selectedGraphNodes: Array[GraphNode]
 @onready var dialogueGraphNodePrefab = preload("res://addons/ez_dialogue/main_screen/dialogue_graph_node.tscn")
 @onready var last_parse_updated_time = 0
 
-const PARSE_UPDATE_WAIT_TIME_IN_MS = 3000
+const PARSE_UPDATE_WAIT_TIME_IN_MS = 1000
 
 func _init_state():
 	dialogueNodes = []
@@ -65,7 +65,7 @@ func reset():
 func _process(delta):
 	# update parse if hasn't been updated in set time.
 	var time_since_last_update = Time.get_ticks_msec() - last_parse_updated_time
-	if time_since_last_update - PARSE_UPDATE_WAIT_TIME_IN_MS > 0:
+	if time_since_last_update - PARSE_UPDATE_WAIT_TIME_IN_MS > 0 && _is_dirty():
 		_update_parse()
 		last_parse_updated_time = Time.get_ticks_msec()
 
@@ -193,11 +193,16 @@ func _on_add_pressed():
 func _on_remove_pressed():
 	var removingIdSet = {}
 	if !selectedGraphNodes.is_empty():
+		# remove graph node from draw surface and release referecne to graph node.
 		for graphNode in selectedGraphNodes:
 			draw_surface.set_selected(null)
 			draw_surface.remove_child(graphNode)
 			removingIdSet[graphNode.get_meta("dialogue_id")] = true
-			
+			var in_connections = _get_incoming_connection_names(graphNode)
+			graphNode.queue_free()
+			for src_node_name in in_connections:
+				_process_node_out_connection_on_graph(_get_dialogue_node_by_name(src_node_name))
+
 		var keptDialogueNodes: Array[DialogueNode] = []
 		for dialogueNode in dialogueNodes:
 			if !removingIdSet.has(dialogueNode.id):
@@ -222,24 +227,20 @@ func _on_new_pressed():
 	
 ######################### EDITOR SIGNAL RESPONSES
 
-func _on_name_editor_text_changed(new_text):
-	
+func _on_name_editor_name_changed(old_text: String, new_text: String):
 	if name_editor.has_focus():
 		_mark_dirty()
-		var oldName = name_editor.text
-		var newName = new_text
-			
-		nodeToOutputs.erase(oldName.to_lower())
+		nodeToOutputs.erase(old_text.to_lower())
 		
-		selectedDialogueNode.name = newName
-		selectedGraphNodes[0].name = newName.to_lower()
+		selectedDialogueNode.name = new_text
+		selectedGraphNodes[0].name = new_text.to_lower()
 		selectedGraphNodes[0].title = selectedDialogueNode.name + " #" + str(selectedDialogueNode.id)
 		selectedDialogueNode.gnode_name = selectedGraphNodes[0].name
 		
 		# error for existing name.
-		var existing_diag_node = _get_dialogue_node_by_name(newName)
+		var existing_diag_node = _get_dialogue_node_by_name(new_text)
 		if existing_diag_node.id != selectedDialogueNode.id:
-			printerr('Dialogue node name "%s" already exists. Could not resolve node connections.' % newName)
+			printerr('Dialogue node name "%s" already exists. Could not resolve node connections.' % new_text)
 			return
 
 		if new_text.is_empty():
@@ -249,9 +250,16 @@ func _on_name_editor_text_changed(new_text):
 		# reconnect current Node to its output
 		_process_node_out_connection_on_graph(selectedDialogueNode)
 		
+		# remove connection from other node to old name
+		if nodeToInputs.has(old_text.to_lower()):
+			for inputNodeName in nodeToInputs[old_text.to_lower()].keys():
+				var diagNode = _get_dialogue_node_by_name(inputNodeName)
+				if diagNode:
+					_process_node_out_connection_on_graph(diagNode)
+
 		# reconnect existing connection from other nodes to the current node
-		if nodeToInputs.has(newName.to_lower()):
-			for inputNodeName in nodeToInputs[newName.to_lower()].keys():
+		if nodeToInputs.has(new_text.to_lower()):
+			for inputNodeName in nodeToInputs[new_text.to_lower()].keys():
 				var diagNode = _get_dialogue_node_by_name(inputNodeName)
 				if diagNode:
 					_process_node_out_connection_on_graph(diagNode)
