@@ -22,7 +22,15 @@ func _ready():
 	print("PASSED.")
 	
 	print("running _test_plain_transition")
-	_test_plain_transition()
+	await _test_plain_transition()
+	print("PASSED.")
+	
+	print("running _test_conditional_transition")
+	await _test_conditional_transition()
+	print("PASSED.")
+	
+	print("running _test_choice_based_transition")
+	await _test_choice_based_transition()
 	print("PASSED.")
 func _test_single_line_plain_text():
 	var test_name = "plain_text_test_single_line"
@@ -56,6 +64,27 @@ func _test_plain_transition():
 	dialogue_handler.start_dialogue(test_dialogue, {}, test_name)
 	await _assert_response("this is base transition test.\ntransition successful.", [])
 	
+func _test_conditional_transition():
+	var test_name = "conditional_transition_test"
+
+	dialogue_handler.start_dialogue(test_dialogue, {"test_variable":true}, test_name)
+	await _assert_response("conditional transition test.\ntrue target reached.", [])
+	
+	dialogue_handler.start_dialogue(test_dialogue, {"test_variable":false}, test_name)
+	await _assert_response("conditional transition test.\nelse target reached.", [])
+	
+func _test_choice_based_transition():
+	var test_name = "choice_based_transition"
+	dialogue_handler.start_dialogue(test_dialogue, {}, test_name)
+	await _assert_response("choice is selected.", ["choice a", "choice b"])
+	dialogue_handler.next(0)
+	await _assert_response("choice A transition target.", [])
+	
+	dialogue_handler.start_dialogue(test_dialogue, {}, test_name)
+	await _assert_response("choice is selected.", ["choice a", "choice b"])
+	dialogue_handler.next(1)
+	await _assert_response("choice B transition target.", [])
+
 func _assert_custom_signal(param: String):
 	var signal_param = await dialogue_handler.custom_signal_received
 	assert(param == signal_param,

@@ -119,7 +119,7 @@ func _process_command(command: DialogueCommand, response: DialogueResponse):
 		var actions: Array[DialogueCommand] = []
 		var prompt: String = _inject_variable_to_text(command.values[0])
 		actions.append_array(command.children)
-		response.append_choice(prompt)
+		response.append_choice(prompt.strip_edges())
 		_pending_choice_actions.push_back(actions)
 	elif command.type == DialogueCommand.CommandType.GOTO:
 		# jump to and run specified node
