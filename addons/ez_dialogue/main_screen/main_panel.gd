@@ -58,6 +58,7 @@ func reset():
 	draw_surface.clear_connections()
 	for childNode in draw_surface.get_children():
 		draw_surface.remove_child(childNode)
+		childNode.queue_free()
 	_init_state()
 	_populate_editor_from_selections([])
 	#_mark_dirty()
@@ -343,6 +344,7 @@ func _on_open_file_dialog_file_selected(path):
 	draw_surface.clear_connections()
 	for childNode in draw_surface.get_children():
 		draw_surface.remove_child(childNode)
+		childNode.queue_free()
 	_init_state()
 	
 	dialogueNodes = resource.dialogue_nodes
