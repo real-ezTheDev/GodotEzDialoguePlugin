@@ -165,7 +165,7 @@ func _clear_editor():
 func _populate_editor(dialogue: DialogueNode):
 	_clear_editor()
 	if dialogue.name:
-		name_editor.text = dialogue.name	
+		name_editor.load_field(dialogue.name)
 	
 	if dialogue.commands_raw:
 		content_editor.text = dialogue.commands_raw
