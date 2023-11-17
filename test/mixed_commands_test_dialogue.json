@@ -1,1 +1,52 @@
-[{"commands_raw":"this is a single line test.","id":0,"name":"plain_text_test_single_line","position":[101,108]},{"commands_raw":"this is a multi line text.\nWhere the consequent lines are put parsed together.","id":1,"name":"plain_text_test_multi_line","position":[105,198]},{"commands_raw":"starting test.\n$if test_variable {\n    variable is true.\n}\n$else {\n    variable is not true.\n}\npost conditional text pick up.","id":2,"name":"base_conditional_display","position":[110,289.5]}]
+[
+	{
+		"commands_raw": "this is a single line test.",
+		"gnode_name": "plain_text_test_single_line",
+		"id": 0,
+		"name": "plain_text_test_single_line",
+		"position": [
+			100,
+			106.900001525879
+		]
+	},
+	{
+		"commands_raw": "this is a multi line text.\nWhere the consequent lines are put parsed together.",
+		"gnode_name": "plain_text_test_multi_line",
+		"id": 1,
+		"name": "plain_text_test_multi_line",
+		"position": [
+			105,
+			198
+		]
+	},
+	{
+		"commands_raw": "starting test.\n$if test_variable {\n    variable is true.\n}\n$else {\n    variable is not true.\n}\npost conditional text pick up.",
+		"gnode_name": "base_conditional_display",
+		"id": 2,
+		"name": "base_conditional_display",
+		"position": [
+			110,
+			289.5
+		]
+	},
+	{
+		"commands_raw": "this is base transition test.\n-> base_transition_target",
+		"gnode_name": "plain_transition_test",
+		"id": 3,
+		"name": "plain_transition_test",
+		"position": [
+			109.487861633301,
+			12.0963439941406
+		]
+	},
+	{
+		"commands_raw": "transition successful.",
+		"gnode_name": "base_transition_target",
+		"id": 4,
+		"name": "base_transition_target",
+		"position": [
+			386.667877197266,
+			9.52634429931641
+		]
+	}
+]

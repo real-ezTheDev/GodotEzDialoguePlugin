@@ -20,7 +20,10 @@ func _ready():
 	print("Running _test_conditional_missing_variable...")
 	await _test_conditional_missing_variable()
 	print("PASSED.")
-
+	
+	print("running _test_plain_transition")
+	_test_plain_transition()
+	print("PASSED.")
 func _test_single_line_plain_text():
 	var test_name = "plain_text_test_single_line"
 	dialogue_handler.start_dialogue(test_dialogue, {}, test_name)
@@ -48,6 +51,11 @@ func _test_conditional_missing_variable():
 	
 	await _assert_response("starting test.\nvariable is not true.\npost conditional text pick up.", [])
 
+func _test_plain_transition():
+	var test_name = "plain_transition_test"
+	dialogue_handler.start_dialogue(test_dialogue, {}, test_name)
+	await _assert_response("this is base transition test.\ntransition successful.", [])
+	
 func _assert_custom_signal(param: String):
 	var signal_param = await dialogue_handler.custom_signal_received
 	assert(param == signal_param,
