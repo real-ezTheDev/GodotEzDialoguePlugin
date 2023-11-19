@@ -1,3 +1,4 @@
+@tool
 class_name DialogueParser extends RefCounted
 
 # Prase the given dialogue script String in to 
