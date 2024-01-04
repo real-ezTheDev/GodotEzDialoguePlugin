@@ -182,8 +182,8 @@ func _process_node_out_connection_on_graph(node: DialogueNode):
 
 func _remove_out_going_connection(nodeName: String):
 	for connection in draw_surface.get_connection_list():
-		if connection["from"] == nodeName.to_lower():
-			draw_surface.disconnect_node(nodeName.to_lower(), 0, connection["to"].to_lower(), 0)
+		if connection["from_node"] == nodeName.to_lower():
+			draw_surface.disconnect_node(nodeName.to_lower(), 0, connection["to_node"].to_lower(), 0)
 	
 ######################### UI SIGNAL RESPONSES
 func _on_add_pressed():
