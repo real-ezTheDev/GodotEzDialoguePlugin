@@ -300,8 +300,8 @@ func _update_parse():
 func _get_incoming_connection_names(graphNode: GraphNode):
 	var result = []
 	for connection in draw_surface.get_connection_list():
-		if connection["to"] == graphNode.name:
-			result.push_back(connection["from"])
+		if connection["to_node"] == graphNode.name:
+			result.push_back(connection["from_node"])
 	return result
 
 ######################### GRAPH NODE SIGNAL RESPONSES
