@@ -9,6 +9,7 @@
 [node name="EzDialogue" type="Node" parent="."]
 script = ExtResource("3_7jgbc")
 
-[node name="ParseMixedCommandsTest" type="Node2D" parent="."]
+[node name="ParseMixedCommandsTest" type="Node2D" parent="." node_paths=PackedStringArray("dialogue_reader")]
 script = ExtResource("1_u2fjh")
 test_dialogue = ExtResource("2_rj5vq")
+dialogue_reader = NodePath("../EzDialogue")

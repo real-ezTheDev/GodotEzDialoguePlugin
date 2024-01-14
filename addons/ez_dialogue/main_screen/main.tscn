@@ -91,7 +91,6 @@ text = "*"
 [node name="draw_container" type="GraphEdit" parent="HSplitContainer/graph_container"]
 layout_mode = 2
 size_flags_vertical = 3
-use_snap = false
 
 [node name="edit_container" type="VBoxContainer" parent="HSplitContainer"]
 layout_mode = 2
@@ -116,12 +115,12 @@ theme_override_fonts/font = ExtResource("2_hauah")
 theme_override_font_sizes/font_size = 15
 placeholder_text = "content goes here"
 editable = false
+caret_blink = true
+syntax_highlighter = SubResource("SyntaxHighlighter_wv4br")
 highlight_current_line = true
 draw_control_chars = true
 draw_tabs = true
 draw_spaces = true
-syntax_highlighter = SubResource("SyntaxHighlighter_wv4br")
-caret_blink = true
 gutters_draw_line_numbers = true
 gutters_zero_pad_line_numbers = true
 indent_use_spaces = true
