@@ -196,22 +196,28 @@ func _on_add_pressed():
 func _on_remove_pressed():
 	var removingIdSet = {}
 	if !selectedGraphNodes.is_empty():
+		var from_nodes_for_update: Array[DialogueNode] = []
 		# remove graph node from draw surface and release reference to graph node.
 		for graphNode in selectedGraphNodes:
 			removingIdSet[graphNode.get_meta("dialogue_id")] = true
 			var in_connections = _get_incoming_connection_names(graphNode)
+			from_nodes_for_update.append_array(in_connections)
 			graphNode.free()
-			for from_node in in_connections:
-				_process_node_out_connection_on_graph(from_node)
 
 		draw_surface.set_selected(null)
+		
 		var keptDialogueNodes: Array[DialogueNode] = []
 		for dialogueNode in dialogueNodes:
 			if !removingIdSet.has(dialogueNode.id):
 				keptDialogueNodes.push_back(dialogueNode)
 		
 		dialogueNodes = keptDialogueNodes
+		
+		for from_node in from_nodes_for_update:
+			_process_node_out_connection_on_graph(from_node)
+	
 		selectedGraphNodes = []
+		
 		_mark_dirty()
 
 func _on_save_pressed():
