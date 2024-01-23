@@ -202,6 +202,7 @@ func _on_remove_pressed():
 			removingIdSet[graphNode.get_meta("dialogue_id")] = true
 			var in_connections = _get_incoming_connection_names(graphNode)
 			from_nodes_for_update.append_array(in_connections)
+			_remove_out_going_connection(graphNode.name)
 			graphNode.free()
 
 		draw_surface.set_selected(null)
