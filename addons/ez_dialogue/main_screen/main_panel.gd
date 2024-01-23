@@ -19,7 +19,7 @@ var selectedGraphNodes: Array[GraphNode]
 @onready var dialogueGraphNodePrefab = preload("res://addons/ez_dialogue/main_screen/dialogue_graph_node.tscn")
 @onready var last_parse_updated_time = 0
 
-const PARSE_UPDATE_WAIT_TIME_IN_MS = 1000
+const PARSE_UPDATE_WAIT_TIME_IN_MS = 1000 # check for parse/node graph update every 1s.
 
 func _init_state():
 	dialogueNodes = []
@@ -88,11 +88,13 @@ func _get_dialogue_node_by_id (node_id: int):
 		if node.id == node_id:
 			return node
 	
-func _get_dialogue_node_by_name(node_name: String):
+func _get_dialogue_node_by_name(node_name: String) -> DialogueNode:
 	for node in dialogueNodes:
 		if node.name.to_lower() == node_name.to_lower():
 			return node
-			
+	
+	return null
+
 func _get_dialogue_node_by_gnode_name(gnode_name: String):
 	for node in dialogueNodes:
 		if node.gnode_name == gnode_name:
@@ -169,7 +171,7 @@ func _populate_editor(dialogue: DialogueNode):
 	
 	if dialogue.commands_raw:
 		content_editor.text = dialogue.commands_raw
-	
+
 func _process_node_out_connection_on_graph(node: DialogueNode):
 		_remove_out_going_connection(node.name)
 		for out_node in node.get_destination_nodes():
@@ -194,16 +196,15 @@ func _on_add_pressed():
 func _on_remove_pressed():
 	var removingIdSet = {}
 	if !selectedGraphNodes.is_empty():
-		# remove graph node from draw surface and release referecne to graph node.
+		# remove graph node from draw surface and release reference to graph node.
 		for graphNode in selectedGraphNodes:
-			draw_surface.set_selected(null)
-			draw_surface.remove_child(graphNode)
 			removingIdSet[graphNode.get_meta("dialogue_id")] = true
 			var in_connections = _get_incoming_connection_names(graphNode)
-			graphNode.queue_free()
-			for src_node_name in in_connections:
-				_process_node_out_connection_on_graph(_get_dialogue_node_by_name(src_node_name))
+			graphNode.free()
+			for from_node in in_connections:
+				_process_node_out_connection_on_graph(from_node)
 
+		draw_surface.set_selected(null)
 		var keptDialogueNodes: Array[DialogueNode] = []
 		for dialogueNode in dialogueNodes:
 			if !removingIdSet.has(dialogueNode.id):
@@ -269,7 +270,7 @@ func _on_content_editor_text_changed():
 	if content_editor.has_focus():
 		_mark_dirty()
 		selectedDialogueNode.commands_raw = content_editor.text
-
+	
 func _update_parse():
 	if selectedGraphNodes.is_empty():
 		return
@@ -297,11 +298,11 @@ func _update_parse():
 	if selectedDialogueNode:
 		content_editor.syntax_highlighter.set_parsed_node(selectedDialogueNode)
 
-func _get_incoming_connection_names(graphNode: GraphNode):
-	var result = []
+func _get_incoming_connection_names(graphNode: GraphNode) -> Array[DialogueNode]:
+	var result: Array[DialogueNode] = []
 	for connection in draw_surface.get_connection_list():
 		if connection["to_node"] == graphNode.name:
-			result.push_back(connection["from_node"])
+			result.push_back(_get_dialogue_node_by_name(connection["from_node"]))
 	return result
 
 ######################### GRAPH NODE SIGNAL RESPONSES
