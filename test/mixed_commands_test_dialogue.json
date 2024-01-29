@@ -108,5 +108,35 @@
 			397.7802734375,
 			-296.886138916016
 		]
+	},
+	{
+		"commands_raw": "assert only this node as visited.\n\n?> two nodes visit -> start_two_nodes_flow",
+		"gnode_name": "node_visit_test",
+		"id": 11,
+		"name": "node_visit_test",
+		"position": [
+			160,
+			-500
+		]
+	},
+	{
+		"commands_raw": "immediately transition without pause.\n\n-> two_nodes_second_node",
+		"gnode_name": "start_two_nodes_flow",
+		"id": 12,
+		"name": "start_two_nodes_flow",
+		"position": [
+			380,
+			-600
+		]
+	},
+	{
+		"commands_raw": "",
+		"gnode_name": "two_nodes_second_node",
+		"id": 13,
+		"name": "two_nodes_second_node",
+		"position": [
+			640,
+			-600
+		]
 	}
 ]

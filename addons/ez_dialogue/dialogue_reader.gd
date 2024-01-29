@@ -18,9 +18,11 @@ signal custom_signal_received(value)
 
 @onready var is_running = false
 @onready var _resource_cache: Dictionary = {}
+@onready var history_stack_size = 100
 
 var _processing_dialogue: DialogueResource
 var _executing_command_stack: Array[DialogueCommand]
+var dialogue_visit_history: Array[String]
 
 # Actions for each choice index is stored here while
 # waiting for caller response on choice selection.
@@ -51,13 +53,13 @@ func _process(delta):
 ## [param start_node] name of the dialogue node the process should begin with.
 ## The default starting node is [param "start"].
 func start_dialogue(
-	dialogue: JSON, state: Dictionary, starting_node = "start"):
+	dialogue: JSON, state: Dictionary, starting_node_name = "start"):
 	
 	_load_dialogue(dialogue)
-	
-	_executing_command_stack = _processing_dialogue.get_node_by_name(
-		starting_node).get_parse()
+	var starting_node = _processing_dialogue.get_node_by_name(starting_node_name)
+	_executing_command_stack = starting_node.get_parse()
 	_pending_choice_actions = []
+	dialogue_visit_history = [starting_node.name]
 	_stateReference = state
 	is_running = true
 
@@ -67,7 +69,7 @@ func _load_dialogue(dialogue: JSON):
 		dialogueResource.loadFromJson(dialogue.data)
 		_resource_cache[dialogue.resource_path] = dialogueResource
 	_processing_dialogue = _resource_cache[dialogue.resource_path]
-	
+
 ## Begin processing next step/page of the dialogue.
 ## the call is ignored if the previous start/run of dialogue is not finished.
 ## Dialogue process is considered "finished" and ready to move on to next
@@ -80,7 +82,8 @@ func _load_dialogue(dialogue: JSON):
 func next(choice_index: int = 0):
 	if is_running:
 		return
-		
+	
+	dialogue_visit_history = []
 	if choice_index >= 0 && choice_index < _pending_choice_actions.size():
 		# select a choice
 		var commands = _pending_choice_actions[choice_index] as Array[DialogueCommand]
@@ -126,9 +129,12 @@ func _process_command(command: DialogueCommand, response: DialogueResponse):
 		# NOTE: GOTO is a terminating command, meaning any remaining commands
 		# in the execution stack is cleared and replaced by commands in
 		# the destination node.
-		var destination_node = command.values[0]
-		_executing_command_stack = _processing_dialogue.get_node_by_name(
-			destination_node).get_parse()
+		var destination_node = _processing_dialogue.get_node_by_name(
+			command.values[0])
+		_executing_command_stack = destination_node.get_parse()
+		dialogue_visit_history.push_front(destination_node.name)
+		if dialogue_visit_history.size() > history_stack_size:
+			dialogue_visit_history.remove_at(-1)
 	elif command.type == DialogueCommand.CommandType.CONDITIONAL:
 		var expression = command.values[0]
 		var result = _evaluate_conditional_expression(expression)
