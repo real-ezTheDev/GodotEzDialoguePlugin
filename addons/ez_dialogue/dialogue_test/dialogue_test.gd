@@ -5,22 +5,30 @@ var state: Dictionary = {}
 
 var _response: DialogueResponse
 
+# Store of custom signal responses received during the test run in order of 
+# first received signal to last.
+var _custom_signal_responses: Array[String]
+
 func _init(_dialogue_reader: EzDialogue):
 	dialogue_reader = _dialogue_reader
+	dialogue_reader.custom_signal_received.connect(_on_custom_signal_received)
 
 # start the dialogue test from specified dialogue node.
 func start_test(dialogue_json: JSON, start_node: String):
+	_custom_signal_responses = []
 	dialogue_reader.start_dialogue(dialogue_json, state, start_node)
 	_response = await dialogue_reader.dialogue_generated
 
 # Resume the dialogue run without specifying a choice selection.
 func resume_without_choice():
+	_custom_signal_responses = []
 	dialogue_reader.next()
 	_response = await dialogue_reader.dialogue_generated
 
 # Resume test dialogue run where choice_index is selected.
 # In another words, continue the test "GIVEN" that the player selected a specified choice_index.
 func resume_with_choice(choice_index: int):
+	_custom_signal_responses = []
 	dialogue_reader.next(choice_index)
 	_response = await dialogue_reader.dialogue_generated
 
@@ -60,4 +68,13 @@ func assert_response(expected_display_text: String, expected_choices: Array[Stri
 
 # Check and assert custom signal with expected signal parameter is received.
 func assert_custom_signal(expected_signal_parameter: String):
-	return true
+	assert(_custom_signal_responses.has(expected_signal_parameter),
+		'Expected custom signal "%s" not received: \n%s' % [expected_signal_parameter, _custom_signal_responses])
+
+# Check and assert no custom signal has been received in the current test run.
+func assert_custom_signal_not_received():
+	assert(_custom_signal_responses.is_empty(),
+		'Unexpected custom signals received: %s' % [_custom_signal_responses])
+	
+func _on_custom_signal_received(custom_signal_param: String):
+	_custom_signal_responses.push_back(custom_signal_param)

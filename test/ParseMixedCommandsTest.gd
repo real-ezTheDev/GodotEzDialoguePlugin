@@ -13,7 +13,8 @@ var tests: Array[Callable] = [
 	_test_plain_transition,
 	_test_conditional_transition,
 	_test_choice_based_transition,
-	_test_node_visited_tester
+	_test_node_visited_tester,
+	_test_custom_signal_received
 ]
 
 func _ready():
@@ -21,7 +22,7 @@ func _ready():
 	
 	for test in tests:
 		print ("Running \"" + test.get_method() + "\"...")
-		var test_result = await test.call()
+		await test.call()
 
 func _test_single_line_plain_text():
 	var test_name = "plain_text_test_single_line"
@@ -95,3 +96,20 @@ func _test_node_visited_tester():
 	tester.assert_dialogue_node_visited("start_two_nodes_flow")
 	tester.assert_dialogue_node_visited("two_nodes_second_node")
 	tester.assert_dialogue_node_not_visited("node_visit_test")
+
+func _test_custom_signal_received():
+	var test_name = "custom_signal_test"
+	tester.set_states({})
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_custom_signal_not_received()
+	
+	await tester.resume_with_choice(0)
+	# one signal test
+	tester.assert_custom_signal("test_signal_1,param1")
+	tester.assert_response("triggering", [])
+	
+	# two signal test
+	await tester.resume_with_choice(0)
+	tester.assert_custom_signal("signal_1,1")
+	tester.assert_custom_signal("signal_2,2")
+	tester.assert_response("and then another signal triggers\nthe end", [])
