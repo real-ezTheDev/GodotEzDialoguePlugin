@@ -1,8 +1,10 @@
 @tool
 class_name EzDialogueReader extends Node
 
+## (This signal no longer triggers. Check for boolean value DialogueResponse.eod_reached from dialogue_generated signal instead.)
 ## Emitted when the end of the dialogue is reached and
 ## no more dialogue needs to be processed.
+## @deprecated 
 signal end_of_dialogue_reached()
 
 ## Emitted when the current "page" of dialogue is processed.
@@ -36,7 +38,7 @@ func _process(delta):
 			if _executing_command_stack.is_empty():
 				is_running = false
 				if _pending_choice_actions.is_empty():
-					end_of_dialogue_reached.emit()
+					response.eod_reached = true
 				break
 				
 			_process_command(_executing_command_stack.pop_front(), response)

@@ -1,4 +1,4 @@
-class_name DialogueTest extends RefCounted
+class_name DialogueTest extends Node
 
 var dialogue_reader: EzDialogueReader
 var state: Dictionary = {}
@@ -8,6 +8,7 @@ var _response: DialogueResponse
 # Store of custom signal responses received during the test run in order of 
 # first received signal to last.
 var _custom_signal_responses: Array[String]
+
 
 func _init(_dialogue_reader: EzDialogue):
 	dialogue_reader = _dialogue_reader
@@ -58,13 +59,19 @@ func assert_dialogue_node_not_visited(dialogue_node_name: String):
 		'Node "%s" was visited: \n%s' % [dialogue_node_name, history_stack])
 	
 # Check and assert generated response texts and choices.
-func assert_response(expected_display_text: String, expected_choices: Array[String]):
+func assert_response(
+	expected_display_text: String,
+	expected_choices: Array[String],
+	expected_eod_reached = false):
 	assert(_response.text == expected_display_text,
 		'Expected repsonse text:"%s",\nactual response:"%s"' % [expected_display_text, _response.text])
 
 	for choice in expected_choices:
 		assert(_response.choices.has(choice),
 			'Expected choice text:"%s",\nnot in:%s' % [choice, _response.choices])
+	
+	assert(expected_eod_reached == _response.eod_reached,
+		'Expected eod_reached=%s, but detected %s' % [expected_eod_reached, _response.eod_reached])
 
 # Check and assert custom signal with expected signal parameter is received.
 func assert_custom_signal(expected_signal_parameter: String):

@@ -2,6 +2,7 @@ class_name DialogueResponse extends Resource
 
 var text: String = ""
 var choices: Array[String] = []
+var eod_reached: bool = false
 
 func append_text(_text: String):
 	if (!text.is_empty()):
