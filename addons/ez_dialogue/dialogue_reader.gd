@@ -39,6 +39,7 @@ func _process(delta):
 				is_running = false
 				if _pending_choice_actions.is_empty():
 					response.eod_reached = true
+					end_of_dialogue_reached.emit()
 				break
 				
 			_process_command(_executing_command_stack.pop_front(), response)
