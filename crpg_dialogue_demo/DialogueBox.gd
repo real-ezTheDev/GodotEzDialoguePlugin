@@ -8,6 +8,8 @@ var state: Dictionary = {}
 var dialogue_finished = false
 var is_rolling = false
 
+var button_cache: Array[DialogueButton] = []
+
 @onready var dialogue_handler: EzDialogue = $EzDialogue
 @onready var roll_handler = $"../RollBox"
 
@@ -20,17 +22,22 @@ func clear_dialogue():
 	is_rolling = false
 	for child in get_children():
 		if child is Button:
-			child.queue_free()
+			child.hide()
 
 func add_text(text: String):
 	$text.text = text
 
 func add_choice(choice_text: String, id: int):
-	var button = dialogue_choice_res.instantiate()
+	if button_cache.size() < id + 1:
+		var new_button = dialogue_choice_res.instantiate()
+		new_button.choice_id = id
+		button_cache.push_back(new_button)
+		add_child(new_button)
+		new_button.dialogue_selected.connect(_on_choice_button_down)
+
+	var button = button_cache[id]
 	button.text = choice_text
-	button.dialogue_selected.connect(_on_choice_button_down)
-	button.choice_id = id
-	add_child(button)
+	button.show()
 
 func _on_choice_button_down(choice_id: int):
 	clear_dialogue()

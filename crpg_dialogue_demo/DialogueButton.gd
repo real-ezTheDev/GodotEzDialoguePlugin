@@ -1,4 +1,4 @@
-extends Button
+class_name DialogueButton extends Button
 
 var choice_id = -1
 signal dialogue_selected(choice_id: int)
