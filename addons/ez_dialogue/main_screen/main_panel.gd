@@ -179,7 +179,6 @@ func _populate_editor(dialogue: DialogueNode):
 func _process_node_out_connection_on_graph(node: DialogueNode):
 		_remove_out_going_connection(node.name)
 		for out_node in node.get_destination_nodes():
-			print("current: %s -> connection: %s" % [node.name,out_node])
 			var out_dialogue_node = _get_dialogue_node_by_name(out_node)
 			if out_dialogue_node:
 				_record_connection_tracker(node.name, out_dialogue_node.gnode_name)
@@ -198,7 +197,6 @@ func _remove_out_going_connection(nodeName: String):
 			if newNodeName != "" && connection["to_node"] != newNodeName:
 				childName = newNodeName
 			var child:DialogueNode = _get_dialogue_node_by_name(childName)
-			print("current: %s | child: %s" % [nodeName,childName])
 			nodeTree.disconnect_nodes(child.id,node.id)
 			
 			draw_surface.disconnect_node(nodeName.to_lower(), 0, connection["to_node"].to_lower(), 0)
@@ -208,10 +206,8 @@ func _on_earliest_pressed():
 	if nodeTree != null:
 		var earliestId = nodeTree.get_heighest_incomplete_node_id()
 		var node = _get_dialogue_node_by_id(earliestId)
-		print("node: %s" % node.name)
 		for child in draw_surface.get_children():
 			if child.name.to_lower() == node.name.to_lower():
-				print("set selected: %s" % child.name)
 				draw_surface.set_selected(child)
 				break
 
@@ -272,7 +268,6 @@ func _on_new_pressed():
 ######################### EDITOR SIGNAL RESPONSES
 
 func _on_name_editor_name_changed(old_text: String, new_text: String):
-	print("old: %s -> new: %s" % [old_text,new_text])
 	newNodeName = new_text
 	if name_editor.has_focus():
 		_mark_dirty()

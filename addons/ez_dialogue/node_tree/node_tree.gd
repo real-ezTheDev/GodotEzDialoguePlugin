@@ -33,14 +33,12 @@ func remove_node(id:int) -> void:
 
 func connect_nodes(nodeId:int,parentId:int) -> void:
 	if dict.has(parentId):
-		print("connect: %s -> %s" % [parentId,nodeId])
 		var parent:TreeNode = dict[parentId]
 		parent.childrenIds.push_back(nodeId)
 
 
 func disconnect_nodes(nodeId:int,parentId:int) -> void:
 	if dict.has(parentId):
-		print("disconnect: %s -> %s" % [parentId,nodeId])
 		var parent:TreeNode = dict[parentId]
 		parent.childrenIds.erase(nodeId)
 
@@ -55,22 +53,18 @@ func get_heighest_incomplete_node_id() -> int:
 
 
 func check_node_completion(id:int,level:int) -> bool:
-	print("id: %s | lvl: %s" % [id,level])
 	# non-existant child means parent is incomplete
 	if !dict.has(id):
-		print("dict[%s] => null" % id)
 		return false
 	var node:TreeNode = dict[id]
 	
 	# if node has no children, it cannot be complete
-	print("dict[%s].childsize: %s" % [id,node.childrenIds.size()]) 
 	if node.childrenIds.size() == 0:
 		check_level(id,level)
 	
 	# check all children of current node
 	for childId in node.childrenIds:
 		var result = check_node_completion(childId,level+1)
-		print("id: %s -> result: %s" % [childId,result])
 		if result == false:
 			check_level(id,level)
 	
