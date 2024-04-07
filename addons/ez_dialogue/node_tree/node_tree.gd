@@ -27,12 +27,14 @@ func add_node(nodeId:int,parentId:int = -1) -> void:
 
 func connect_nodes(nodeId:int,parentId:int) -> void:
 	if dict.has(parentId):
+		print("connect: %s -> %s" % [parentId,nodeId])
 		var parent:TreeNode = dict[parentId]
 		parent.childrenIds.push_back(nodeId)
 
 
 func disconnect_nodes(nodeId:int,parentId:int) -> void:
 	if dict.has(parentId):
+		print("disconnect: %s -> %s" % [parentId,nodeId])
 		var parent:TreeNode = dict[parentId]
 		parent.childrenIds.erase(nodeId)
 
