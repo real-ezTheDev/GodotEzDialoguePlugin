@@ -179,16 +179,18 @@ func _populate_editor(dialogue: DialogueNode):
 func _process_node_out_connection_on_graph(node: DialogueNode):
 		_remove_out_going_connection(node.name)
 		for out_node in node.get_destination_nodes():
+			print("current: %s -> connection: %s" % [node.name,out_node])
 			var out_dialogue_node = _get_dialogue_node_by_name(out_node)
 			if out_dialogue_node:
 				_record_connection_tracker(node.name, out_dialogue_node.gnode_name)
 				draw_surface.connect_node(node.gnode_name.to_lower(), 0, out_dialogue_node.gnode_name, 0)
-				# add node tree connection
 				nodeTree.connect_nodes(out_dialogue_node.id,node.id)
 			else:
 				_record_connection_tracker(node.name, out_node)
 
 func _remove_out_going_connection(nodeName: String):
+	var node:DialogueNode = _get_dialogue_node_by_name(nodeName)
+	
 	for connection in draw_surface.get_connection_list():
 		if connection["from_node"] == nodeName.to_lower():
 			# remove node tree connection
@@ -196,7 +198,6 @@ func _remove_out_going_connection(nodeName: String):
 			if newNodeName != "" && connection["to_node"] != newNodeName:
 				childName = newNodeName
 			var child:DialogueNode = _get_dialogue_node_by_name(childName)
-			var node:DialogueNode = _get_dialogue_node_by_name(nodeName)
 			print("current: %s | child: %s" % [nodeName,childName])
 			nodeTree.disconnect_nodes(child.id,node.id)
 			
@@ -394,8 +395,12 @@ func _on_open_file_dialog_file_selected(path):
 	dialogueNodes = resource.dialogue_nodes
 
 	#redraw graph
+	if nodeTree.rootNode == null:
+		nodeTree.set_root_node(dialogueNodes.front().id)
+		
 	for dialogue in dialogueNodes:
 		_add_dialogue_node_graph(dialogue, false, dialogue.position)
+		nodeTree.add_node(dialogue.id)
 		_process_node_out_connection_on_graph(dialogue)
 
 	_mark_saved()

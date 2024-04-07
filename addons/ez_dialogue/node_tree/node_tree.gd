@@ -10,6 +10,7 @@ var heighest_level:int
 var heighest_id:int
 
 
+######################### GETTERS AND SETTERS
 func set_root_node(id:int) -> void:
 	add_node(id)
 	rootNode = dict[id]
@@ -23,6 +24,11 @@ func add_node(nodeId:int,parentId:int = -1) -> void:
 		# connect to parent
 		if parentId >= 0 && dict.has(parentId):
 			(dict[parentId] as TreeNode).childrenIds.push_back(nodeId)
+
+
+func remove_node(id:int) -> void:
+	if dict.has(id):
+		dict.erase(id)
 
 
 func connect_nodes(nodeId:int,parentId:int) -> void:
@@ -39,11 +45,7 @@ func disconnect_nodes(nodeId:int,parentId:int) -> void:
 		parent.childrenIds.erase(nodeId)
 
 
-func remove_node(id:int) -> void:
-	if dict.has(id):
-		dict.erase(id)
-
-
+######################### TREE SEARCHING
 func get_heighest_incomplete_node_id() -> int:
 	heighest_id = rootNode.id
 	# setting an absurdly large number
@@ -60,9 +62,8 @@ func check_node_completion(id:int,level:int) -> bool:
 		return false
 	var node:TreeNode = dict[id]
 	
-	print("dict[%s].childsize: %s" % [id,node.childrenIds.size()]) 
-	
 	# if node has no children, it cannot be complete
+	print("dict[%s].childsize: %s" % [id,node.childrenIds.size()]) 
 	if node.childrenIds.size() == 0:
 		check_level(id,level)
 	
