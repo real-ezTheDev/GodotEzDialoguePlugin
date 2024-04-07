@@ -60,9 +60,9 @@ func check_node_completion(id:int,level:int) -> bool:
 	
 	print("dict[%s].childsize: %s" % [id,node.childrenIds.size()]) 
 	
-	## if node has no children, it cannot be complete
-	#if node.childrenIds.size() == 0:
-		#return false
+	# if node has no children, it cannot be complete
+	if node.childrenIds.size() == 0:
+		check_level(id,level)
 	
 	# check all children of current node
 	for childId in node.childrenIds:
