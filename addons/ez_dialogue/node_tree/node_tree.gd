@@ -6,8 +6,8 @@ const MAX_INT:int = 9223372036854775807
 
 var rootNode:TreeNode
 var dict:Dictionary = {}
-var heighest_level:int
-var heighest_id:int
+var earliest_level:int
+var earliest_id:int
 
 
 ######################### GETTERS AND SETTERS
@@ -44,12 +44,12 @@ func disconnect_nodes(nodeId:int,parentId:int) -> void:
 
 
 ######################### TREE SEARCHING
-func get_heighest_incomplete_node_id() -> int:
-	heighest_id = rootNode.id
+func get_earliest_incomplete_node_id() -> int:
+	earliest_id = rootNode.id
 	# setting an absurdly large number
-	heighest_level = MAX_INT
+	earliest_level = MAX_INT
 	check_node_completion(rootNode.id,0)
-	return heighest_id
+	return earliest_id
 
 
 func check_node_completion(id:int,level:int) -> bool:
@@ -73,7 +73,7 @@ func check_node_completion(id:int,level:int) -> bool:
 
 
 func check_level(id:int,level:int) -> void:
-	# check if node is heighest
-	if level < heighest_level:
-		heighest_level = level
-		heighest_id = id
+	# check if node is earliest
+	if level < earliest_level:
+		earliest_level = level
+		earliest_id = id

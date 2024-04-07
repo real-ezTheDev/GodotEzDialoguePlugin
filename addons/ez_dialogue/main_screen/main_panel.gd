@@ -204,7 +204,7 @@ func _remove_out_going_connection(nodeName: String):
 ######################### UI SIGNAL RESPONSES
 func _on_earliest_pressed():
 	if nodeTree != null:
-		var earliestId = nodeTree.get_heighest_incomplete_node_id()
+		var earliestId = nodeTree.get_earliest_incomplete_node_id()
 		var node = _get_dialogue_node_by_id(earliestId)
 		for child in draw_surface.get_children():
 			if child.name.to_lower() == node.name.to_lower():
