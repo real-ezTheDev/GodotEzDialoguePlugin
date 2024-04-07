@@ -24,11 +24,18 @@ Click [here](https://youtu.be/WVflfiKjXgk) for video tutorial/demo.
 To begin writing your dialogue, go to `EzDialogue` tab.
 
 ### Dialogue Node
+#### Add a New Node
 Create a dialogue node by clicking the `+` on the top left corner of the dialogue editor window.
 !["+" button in editor](https://github.com/real-ezTheDev/GodotEzDialoguePlugin/blob/dev/readme_src/add_diag_node_button.png?raw=true)
 
 Once you select the node (the created Dialogue Node should be alrady selected), the right-side panel enables. This is where you edit the Dialogue Node's name and its content.
 ![click on node to edit its content](https://github.com/real-ezTheDev/GodotEzDialoguePlugin/blob/dev/readme_src/selecting_diag_node.png?raw=true)
+
+#### Find Earliest Unfinished Node
+Select this back arrow if you want to find the earliest/heightest point in the graph where a node; a node if "unfinished" if it meats the following criteria:
+- has outgoing connections to non-existant nodes
+- lacks any outgoing connections
+!["⮦" button in editor](https://github.com/real-ezTheDev/GodotEzDialoguePlugin/blob/main/readme_src/earliest_unfinished_node_button.png?raw=true)
 
 ### Writing Content
 #### Dialogue Name
