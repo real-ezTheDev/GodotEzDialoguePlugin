@@ -10,6 +10,8 @@ class_name MainDiagPanel extends Panel
 @onready var nodeToOutputs = {}
 @onready var nodeToInputs = {}
 @onready var workingPath = ""
+@onready var nodeTree:NodeTree
+@onready var newNodeName:String = ""
 
 signal working_path_changed(path)
 
@@ -25,6 +27,8 @@ func _init_state():
 	dialogueNodes = []
 	nodeToOutputs = {}
 	nodeToInputs = {}
+	nodeTree = NodeTree.new()
+	newNodeName = ""
 	selectedDialogueNode = null
 	selectedGraphNodes = []
 	working_path_changed.emit("")
@@ -116,7 +120,7 @@ func _add_dialogue_node(node_name = "Diag Node"):
 	
 	dialogueNodes.push_back(dialogue)
 	return dialogue
-	
+
 func _add_dialogue_node_graph(dialogue: DialogueNode, focus = false, position = null):
 	var node = dialogueGraphNodePrefab.instantiate()
 	node.title = dialogue.name + " #" + str(dialogue.id)
@@ -179,19 +183,47 @@ func _process_node_out_connection_on_graph(node: DialogueNode):
 			if out_dialogue_node:
 				_record_connection_tracker(node.name, out_dialogue_node.gnode_name)
 				draw_surface.connect_node(node.gnode_name.to_lower(), 0, out_dialogue_node.gnode_name, 0)
+				# add node tree connection
+				nodeTree.connect_nodes(out_dialogue_node.id,node.id)
 			else:
 				_record_connection_tracker(node.name, out_node)
 
 func _remove_out_going_connection(nodeName: String):
 	for connection in draw_surface.get_connection_list():
 		if connection["from_node"] == nodeName.to_lower():
+			# remove node tree connection
+			var childName = connection["to_node"] 
+			if newNodeName != "" && connection["to_node"] != newNodeName:
+				childName = newNodeName
+			var child:DialogueNode = _get_dialogue_node_by_name(childName)
+			var node:DialogueNode = _get_dialogue_node_by_name(nodeName)
+			print("current: %s | child: %s" % [nodeName,childName])
+			nodeTree.disconnect_nodes(child.id,node.id)
+			
 			draw_surface.disconnect_node(nodeName.to_lower(), 0, connection["to_node"].to_lower(), 0)
-	
+
 ######################### UI SIGNAL RESPONSES
+func _on_earliest_pressed():
+	if nodeTree != null:
+		var earliestId = nodeTree.get_heighest_incomplete_node_id()
+		var node = _get_dialogue_node_by_id(earliestId)
+		print("node: %s" % node.name)
+		for child in draw_surface.get_children():
+			if child.name.to_lower() == node.name.to_lower():
+				print("set selected: %s" % child.name)
+				draw_surface.set_selected(child)
+				break
+
 func _on_add_pressed():
 	selectedDialogueNode = _add_dialogue_node()
 	_add_dialogue_node_graph(selectedDialogueNode, true)
 	_mark_dirty()
+	
+	if nodeTree == null:
+		nodeTree = NodeTree.new()
+	if nodeTree.rootNode == null:
+		nodeTree.set_root_node(selectedDialogueNode.id)
+	nodeTree.add_node(selectedDialogueNode.id)
 
 func _on_remove_pressed():
 	var removingIdSet = {}
@@ -199,12 +231,14 @@ func _on_remove_pressed():
 		var from_nodes_for_update: Array[DialogueNode] = []
 		# remove graph node from draw surface and release reference to graph node.
 		for graphNode in selectedGraphNodes:
-			removingIdSet[graphNode.get_meta("dialogue_id")] = true
+			var nodeId:int = graphNode.get_meta("dialogue_id")
+			removingIdSet[nodeId] = true
 			var in_connections = _get_incoming_connection_names(graphNode)
 			from_nodes_for_update.append_array(in_connections)
 			_remove_out_going_connection(graphNode.name)
+			nodeTree.remove_node(nodeId)
 			graphNode.free()
-
+		
 		draw_surface.set_selected(null)
 		
 		var keptDialogueNodes: Array[DialogueNode] = []
@@ -237,6 +271,8 @@ func _on_new_pressed():
 ######################### EDITOR SIGNAL RESPONSES
 
 func _on_name_editor_name_changed(old_text: String, new_text: String):
+	print("old: %s -> new: %s" % [old_text,new_text])
+	newNodeName = new_text
 	if name_editor.has_focus():
 		_mark_dirty()
 		nodeToOutputs.erase(old_text.to_lower())
@@ -277,29 +313,29 @@ func _on_content_editor_text_changed():
 	if content_editor.has_focus():
 		_mark_dirty()
 		selectedDialogueNode.commands_raw = content_editor.text
-	
+
 func _update_parse():
 	if selectedGraphNodes.is_empty():
 		return
-
+	
 	var editingNodeName = selectedGraphNodes[0].name
 	var oldOuts = []
 	# Clean Old Output from Current Node Record
 	for out_node in selectedDialogueNode.get_destination_nodes():
 		oldOuts.push_back(out_node.to_lower())
 	nodeToOutputs.erase(editingNodeName.to_lower())
-
+	
 	# update parsing of selected node
 	selectedDialogueNode.clear_parse()
 	for out_node in selectedDialogueNode.get_destination_nodes():
 		while oldOuts.has(out_node):
 			oldOuts.erase(out_node)
-				
+	
 	for oldOut in oldOuts:
 		nodeToInputs[oldOut].erase(editingNodeName.to_lower())
 		if nodeToInputs[oldOut].is_empty():
 			nodeToInputs.erase(oldOut)
-
+	
 	_process_node_out_connection_on_graph(selectedDialogueNode)
 	
 	if selectedDialogueNode:
