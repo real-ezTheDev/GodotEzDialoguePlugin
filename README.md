@@ -147,7 +147,7 @@ I do not wish for this tool to start over-reaching into another programming/scri
 Having said this, my future features are:
 1. TAG in nodes to both quickly filter/search nodes I need to fix/continue writing.
 2. Flow reference - When in any given node, be able to quickly see what nodes could potentially reach the current node.
-3. Jump to earliest uhnadled branch - this is to pre plan a split and keep writing depth first for one specific branch and be able to retur nto the starting point and start writing next branch until all the branch has been handled.
+3. ~~Jump to earliest uhnadled branch - this is to pre plan a split and keep writing depth first for one specific branch and be able to retur nto the starting point and start writing next branch until all the branch has been handled.~~
 4. Syntax highlighting hardening (currently syntax highlighting of the format in the editor isn't really complete...)
 5. Bugs - there are bugs- some minor some major. While I really wish to provide support for the community to fix all the relevant bugs, unless I somehow find funding to spend extra time and effort on this tool - I would have to bias towards dealing with a "work around" if it exists and only a blocking bug for my own project would see a fix.
 
