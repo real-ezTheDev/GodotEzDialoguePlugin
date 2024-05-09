@@ -32,7 +32,7 @@ Once you select the node (the created Dialogue Node should be alrady selected), 
 ![click on node to edit its content](https://github.com/real-ezTheDev/GodotEzDialoguePlugin/blob/dev/readme_src/selecting_diag_node.png?raw=true)
 
 #### Find Earliest Unfinished Node
-Select this back arrow if you want to find the earliest/heightest point in the graph where a node; a node if "unfinished" if it meats the following criteria:
+Select this back arrow if you want to find the earliest/heightest point in the graph where a node is unfinished; a node is "unfinished" if it meets the following criteria:
 - has outgoing connections to non-existant nodes
 - lacks any outgoing connections
 !["⮦" button in editor](https://github.com/real-ezTheDev/GodotEzDialoguePlugin/blob/main/readme_src/earliest_unfinished_node_button.png?raw=true)
