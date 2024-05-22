@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://c4h2pps361nfk"]
 
 [ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/main_panel.gd" id="1_qjims"]
-[ext_resource type="FontFile" uid="uid://buwm2t0sdxgw" path="res://addons/ez_dialogue/main_screen/ProggyVector Regular.ttf" id="2_hauah"]
+[ext_resource type="FontFile" uid="uid://d0vn1doa1ej3a" path="res://addons/ez_dialogue/main_screen/ProggyVector Regular.ttf" id="2_hauah"]
 [ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/name_editor.gd" id="2_tbf72"]
 [ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/ezd_syntax.gd" id="3_ew0wp"]
 
@@ -54,6 +54,10 @@ size_flags_horizontal = 3
 [node name="HBoxContainer" type="HBoxContainer" parent="HSplitContainer/graph_container"]
 layout_mode = 2
 size_flags_horizontal = 0
+
+[node name="earliest" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
+layout_mode = 2
+text = " ⮦  "
 
 [node name="add" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
 custom_minimum_size = Vector2(30, 30)
@@ -129,6 +133,7 @@ auto_brace_completion_enabled = true
 [connection signal="working_path_changed" from="." to="." method="_on_working_path_changed"]
 [connection signal="file_selected" from="SaveFileDialog" to="." method="_on_save_file_dialog_file_selected"]
 [connection signal="file_selected" from="OpenFileDialog" to="." method="_on_open_file_dialog_file_selected"]
+[connection signal="pressed" from="HSplitContainer/graph_container/HBoxContainer/earliest" to="." method="_on_earliest_pressed"]
 [connection signal="pressed" from="HSplitContainer/graph_container/HBoxContainer/add" to="." method="_on_add_pressed"]
 [connection signal="pressed" from="HSplitContainer/graph_container/HBoxContainer/remove" to="." method="_on_remove_pressed"]
 [connection signal="pressed" from="HSplitContainer/graph_container/HBoxContainer/new" to="." method="_on_new_pressed"]
