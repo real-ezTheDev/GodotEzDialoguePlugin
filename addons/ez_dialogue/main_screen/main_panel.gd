@@ -192,12 +192,15 @@ func _remove_out_going_connection(nodeName: String):
 	
 	for connection in draw_surface.get_connection_list():
 		if connection["from_node"] == nodeName.to_lower():
-			# remove node tree connection
+			# ensure the correct node name is used when disconnecting
 			var childName = connection["to_node"] 
 			if newNodeName != "" && connection["to_node"] != newNodeName:
 				childName = newNodeName
 			var child:DialogueNode = _get_dialogue_node_by_name(childName)
-			nodeTree.disconnect_nodes(child.id,node.id)
+			
+			# only disconnect existing nodes; removed nodes have no id to trace
+			if child != null:
+				nodeTree.disconnect_nodes(child.id,node.id)
 			
 			draw_surface.disconnect_node(nodeName.to_lower(), 0, connection["to_node"].to_lower(), 0)
 
