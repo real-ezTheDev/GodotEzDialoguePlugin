@@ -24,11 +24,18 @@ Click [here](https://youtu.be/WVflfiKjXgk) for video tutorial/demo.
 To begin writing your dialogue, go to `EzDialogue` tab.
 
 ### Dialogue Node
+#### Add a New Node
 Create a dialogue node by clicking the `+` on the top left corner of the dialogue editor window.
 !["+" button in editor](https://github.com/real-ezTheDev/GodotEzDialoguePlugin/blob/dev/readme_src/add_diag_node_button.png?raw=true)
 
 Once you select the node (the created Dialogue Node should be alrady selected), the right-side panel enables. This is where you edit the Dialogue Node's name and its content.
 ![click on node to edit its content](https://github.com/real-ezTheDev/GodotEzDialoguePlugin/blob/dev/readme_src/selecting_diag_node.png?raw=true)
+
+#### Find Earliest Unfinished Node
+Select this back arrow if you want to find the earliest/heightest point in the graph where a node is unfinished; a node is "unfinished" if it meets the following criteria:
+- has outgoing connections to non-existant nodes
+- lacks any outgoing connections
+!["⮦" button in editor](https://github.com/real-ezTheDev/GodotEzDialoguePlugin/blob/main/readme_src/earliest_unfinished_node_button.png?raw=true)
 
 ### Writing Content
 #### Dialogue Name
@@ -140,7 +147,7 @@ I do not wish for this tool to start over-reaching into another programming/scri
 Having said this, my future features are:
 1. TAG in nodes to both quickly filter/search nodes I need to fix/continue writing.
 2. Flow reference - When in any given node, be able to quickly see what nodes could potentially reach the current node.
-3. Jump to earliest uhnadled branch - this is to pre plan a split and keep writing depth first for one specific branch and be able to retur nto the starting point and start writing next branch until all the branch has been handled.
+3. ~~Jump to earliest uhnadled branch - this is to pre plan a split and keep writing depth first for one specific branch and be able to retur nto the starting point and start writing next branch until all the branch has been handled.~~
 4. Syntax highlighting hardening (currently syntax highlighting of the format in the editor isn't really complete...)
 5. Bugs - there are bugs- some minor some major. While I really wish to provide support for the community to fix all the relevant bugs, unless I somehow find funding to spend extra time and effort on this tool - I would have to bias towards dealing with a "work around" if it exists and only a blocking bug for my own project would see a fix.
 
