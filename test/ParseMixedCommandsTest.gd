@@ -19,7 +19,8 @@ var tests: Array[Callable] = [
 	_test_variable_injection_in_text,
 	_test_nested_variable_injection_in_text,
 	_test_nested_variable_conditional,
-	_test_complex_nested_variable_conditional
+	_test_complex_nested_variable_conditional,
+	_test_null_variable_injection
 ]
 
 func _ready():
@@ -153,7 +154,14 @@ func _test_nested_variable_injection_in_text():
 	tester.set_states(state)
 	await tester.start_test(test_dialogue, test_name)
 	tester.assert_response("Inject the following nested_deep.", [], true)
-	
+
+func _test_null_variable_injection():
+	var test_name = "test_variable_injection_in_text"
+	var state = {}
+	tester.set_states(state)
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("This is a variable display text.\nInject the following .\nyipee!", [], true)
+
 func _test_nested_variable_conditional():
 	var test_name = "test_nested_variable_conditional"
 	var state = {

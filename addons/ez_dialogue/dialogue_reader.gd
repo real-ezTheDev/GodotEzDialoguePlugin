@@ -169,18 +169,24 @@ func _inject_variable_to_text(text: String):
 		
 		for variable in requiredVariables:
 			var value = "" 
+			var variable_name_string = ""
 			if variable is Array:
 				value = _recursion_search_inject(_stateReference,variable,1)
 				if not value is String:
 					value = str(value)
-				final_text = final_text.replace(
-					"${%s}"%variable[0], value)
+				variable_name_string = variable[0]
 			else:
 				value = _stateReference.get(variable)
+				variable_name_string = variable
+				
+			if value:
 				if not value is String:
 					value = str(value)
 				final_text = final_text.replace(
-					"${%s}"%variable, value)
+					"${%s}"%variable_name_string, value)
+			else:
+				final_text = final_text.replace(
+					"${%s}"%variable_name_string, "")
 		return final_text
 
 func _queue_executing_commands(commands: Array[DialogueCommand]):
