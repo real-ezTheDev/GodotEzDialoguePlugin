@@ -153,20 +153,34 @@ func _process_command(command: DialogueCommand, response: DialogueResponse):
 		
 func _inject_variable_to_text(text: String):
 		# replacing variable placeholders
-		var requiredVariables: Array[String] = []
+		var requiredVariables: Array = []
 		var variablePlaceholderRegex = RegEx.new()
 		variablePlaceholderRegex.compile("\\${(\\S+?)}")
+		var nestedVariableRegex = RegEx.new()
+		nestedVariableRegex.compile("(\"\\S+?\")")
 		var final_text = text
 		var matchResults = variablePlaceholderRegex.search_all(final_text)
 		for result in matchResults:
-			requiredVariables.push_back(result.get_string(1))
+			var nestedResults = nestedVariableRegex.search_all(result.get_string(1))
+			if nestedResults.size()>0:
+				requiredVariables.push_back(_nested_state_reference(result.get_string(1),nestedResults))
+			else:
+				requiredVariables.push_back(result.get_string(1))
 		
 		for variable in requiredVariables:
-			var value = _stateReference.get(variable)
-			if not value is String:
-				value = str(value)
-			final_text = final_text.replace(
-				"${%s}"%variable, value)
+			var value = "" 
+			if variable is Array:
+				value = _recursion_search_inject(_stateReference,variable,1)
+				if not value is String:
+					value = str(value)
+				final_text = final_text.replace(
+					"${%s}"%variable[0], value)
+			else:
+				value = _stateReference.get(variable)
+				if not value is String:
+					value = str(value)
+				final_text = final_text.replace(
+					"${%s}"%variable, value)
 		return final_text
 
 func _queue_executing_commands(commands: Array[DialogueCommand]):
@@ -180,15 +194,71 @@ func _evaluate_conditional_expression(expression: String):
 	var properties = _stateReference.keys()
 	var evaluation = Expression.new()
 	var availableVariables: Array[String] = []
+	var workingExpression = expression
 	var variableValues = []
+	
+	var requiredVariables = []
+	var variable_pattern = RegEx.new()
+	variable_pattern.compile("[a-zA-Z_\\d]+(\\[\"[a-zA-Z_\\d]+?\"\\])*")
+	var match_results = variable_pattern.search_all(expression)
+	var nestedVariableRegex = RegEx.new()
+	nestedVariableRegex.compile("(\"\\S+?\")")
+	
+	for variable_match in match_results:
+		var nestedResults = nestedVariableRegex.search_all(variable_match.get_string(0))
+		if nestedResults.size() > 0:
+			requiredVariables.push_back(
+				_nested_state_reference(variable_match.get_string(0), nestedResults))
+		else:
+			requiredVariables.push_back(variable_match.get_string(0))
+	
+	for variable in requiredVariables:
+		var value = "" 
+		if variable is Array:
+			value = _recursion_search_inject(_stateReference,variable,1)
+			if not value is String:
+				value = str(value)
+			workingExpression = workingExpression.replace(
+				variable[0], value)
+		else:
+			value = _stateReference.get(variable)
+			if not value is String:
+				value = str(value)
+			workingExpression = workingExpression.replace(
+				variable, value)
+		
 	for property in properties:
 		availableVariables.push_back(property)
 		variableValues.push_back(_stateReference.get(property))
 	
-	var parse_error = evaluation.parse(expression, PackedStringArray(availableVariables))
+	var parse_error = evaluation.parse(workingExpression, PackedStringArray(availableVariables))
 	var result = evaluation.execute(variableValues)
 	if evaluation.has_execute_failed():
 		printerr("Conditional expression '%s' did not parse/execute correctly with state: %s"%[expression, variableValues])
 		# failed expression statement is assumed falsy.
 		return false
 	return result
+
+#region Added Functions
+func _recursion_search_inject(startingPoint,searchKey,count):
+	#keep recursing into a entry till hitting anything that's count is the same size as the searchKey array or not a dictionary or array
+	var returnVal = startingPoint
+	if count < searchKey.size():
+		if startingPoint.has(searchKey[count]):
+			returnVal = startingPoint[searchKey[count]]
+			if returnVal is Dictionary or returnVal is Array:
+				returnVal = _recursion_search_inject(returnVal,searchKey,count+1)
+		else:
+			printerr("Missing key %s"%searchKey[count])
+			return null
+	return returnVal
+
+func _nested_state_reference(key: String, nestedKey: Array[RegExMatch], inject = true):
+	#finds all the keys of a expression or ${variable}
+	var temp = [key]
+	if inject:
+		temp.append(key.left(key.find("[")))
+
+	for i in nestedKey:
+		temp.append(i.get_string(1).replace("\"",""))
+	return temp

@@ -15,7 +15,11 @@ var tests: Array[Callable] = [
 	_test_choice_based_transition,
 	_test_node_visited_tester,
 	_test_custom_signal_received,
-	_test_issue11_endofdialogue_detection
+	_test_issue11_endofdialogue_detection,
+	_test_variable_injection_in_text,
+	_test_nested_variable_injection_in_text,
+	_test_nested_variable_conditional,
+	_test_complex_nested_variable_conditional
 ]
 
 func _ready():
@@ -130,3 +134,65 @@ func _test_issue11_endofdialogue_detection():
 	await tester.start_test(test_dialogue, test_name)
 	tester.assert_response("some text\nreached the end.", [], true)
 
+func _test_variable_injection_in_text():
+	var test_name = "test_variable_injection_in_text"
+	var state = {
+		"test_variable": "success."
+		}
+	tester.set_states(state)
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("This is a variable display text.\nInject the following %s.\nyipee!"%state.test_variable, [], true)
+
+func _test_nested_variable_injection_in_text():
+	var test_name = "test_nested_variable_injection_in_text"
+	var state = {
+		"test_nested_variable": {
+			"property1": "nested_deep"
+		}
+		}
+	tester.set_states(state)
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("Inject the following nested_deep.", [], true)
+	
+func _test_nested_variable_conditional():
+	var test_name = "test_nested_variable_conditional"
+	var state = {
+		"some_variable": {
+			"nested_component": true
+		}
+		}
+	tester.set_states(state)
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("about to test nested variable in conditional.\ntrue target reached.", [], true)
+	
+	state["some_variable"]["nested_component"] = false
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("about to test nested variable in conditional.\nelse target reached.", [], true)
+	
+func _test_complex_nested_variable_conditional():
+	print("\tFirst Scenario...")
+	var test_name = "test_complex_nested_variable_conditional"
+	var state = {
+		"some_variable": {
+			"nested_component": true,
+			"nested_component_2": {
+				"even_deeper_component": false
+			}
+		},
+		"second_variable": true,
+		}
+	tester.set_states(state)
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("about to test nested variable in conditional.\ntrue target reached.", [], true)
+	
+	print("\tSecond Scenario...")
+	
+	state["second_variable"] = false
+	state["some_variable"]["nested_component_2"]["even_deeper_component"] = true
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("about to test nested variable in conditional.\ntrue target reached.", [], true)
+	
+	print("\tThird Scenario...")
+	state["some_variable"]["nested_component_2"]["even_deeper_component"] = false
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("about to test nested variable in conditional.\nelse target reached.", [], true)
