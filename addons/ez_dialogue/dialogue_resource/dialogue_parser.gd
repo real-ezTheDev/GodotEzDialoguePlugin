@@ -1,7 +1,7 @@
 @tool
 class_name DialogueParser extends RefCounted
 
-# Prase the given dialogue script String in to 
+# Parse the given dialogue script String in to 
 # list of "possibly" nested [DialogueCommand]s.
 func parse(dialogue_script: String):
 	var rootParse: Array[DialogueCommand] = []
@@ -11,8 +11,6 @@ func parse(dialogue_script: String):
 	while n < dialogue_script.length():
 		n = _parse_statement(n, dialogue_script, rootParse)
 	
-	#print ("content parseD:")
-	#print (rootParse)
 	return rootParse
 	
 
