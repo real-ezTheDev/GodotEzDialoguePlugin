@@ -171,7 +171,7 @@ func _inject_variable_to_text(text: String):
 			var value = "" 
 			var variable_name_string = ""
 			if variable is Array:
-				value = _recursion_search_inject(_stateReference,variable,1)
+				value = _retrieve_nested_values(variable)
 				if not value is String:
 					value = str(value)
 				variable_name_string = variable[0]
@@ -199,9 +199,7 @@ func _evaluate_conditional_expression(expression: String):
 	# only handle order of operation and && and ||
 	var properties = _stateReference.keys()
 	var evaluation = Expression.new()
-	var availableVariables: Array[String] = []
 	var workingExpression = expression
-	var variableValues = []
 	
 	var requiredVariables = []
 	var variable_pattern = RegEx.new()
@@ -228,8 +226,7 @@ func _evaluate_conditional_expression(expression: String):
 	for variable in requiredVariables:
 		var value = "" 
 		if variable is Array:
-			value = _recursion_search_inject(_stateReference,variable,1)
-			
+			value = _retrieve_nested_values(variable)
 			if not value is String :
 				value = str(value)
 			else:
@@ -245,38 +242,42 @@ func _evaluate_conditional_expression(expression: String):
 				value = "\"" + value + "\""
 			workingExpression = workingExpression.replace(
 				variable, value)
-		
-	for property in properties:
-		availableVariables.push_back(property)
-		variableValues.push_back(_stateReference.get(property))
-	
-	var parse_error = evaluation.parse(workingExpression, PackedStringArray(availableVariables))
-	var result = evaluation.execute(variableValues)
+			
+	var parse_error = evaluation.parse(workingExpression)
+	if parse_error > 0:
+		printerr("Error: Can't find expression '%s' in the stateReference: %s"%[expression,_stateReference])
+		# Removing causes an error in debugger due to parsing failing and going into evaluation.execute() after failing.
+		return false 
+	var result = evaluation.execute()
 	if evaluation.has_execute_failed():
-		printerr("Conditional expression '%s' did not parse/execute correctly with state: %s"%[expression, variableValues])
+		printerr("Conditional expression '%s' did not parse/execute correctly with state: %s"%[workingExpression, _stateReference])
 		# failed expression statement is assumed falsy.
 		return false
 	return result
 
-#region Added Functions
-func _recursion_search_inject(startingPoint,searchKey,count):
-	#keep recursing into a entry till hitting anything that's count is the same size as the searchKey array or not a dictionary or array
-	var returnVal = startingPoint
-	if count < searchKey.size():
-		if startingPoint.has(searchKey[count]):
-			returnVal = startingPoint[searchKey[count]]
-			if returnVal is Dictionary or returnVal is Array:
-				returnVal = _recursion_search_inject(returnVal,searchKey,count+1)
-		else:
-			printerr("Missing key %s"%searchKey[count])
-			return null
-	return returnVal
+func _retrieve_nested_values(searchKeys: Array):
+	# [param searchKeys, contains an array of the starting expression or text along side all keys to search for]
+	# [Eg: ["some_variable["nested_component"]","some_variable","nested_component"]]
+	var currentKey = _stateReference
+	if searchKeys.size() >= 1:
+		for key in len(searchKeys):
+			if key != 0: # skip first entry since it will contain the full expression / ${} variable
+				if currentKey is Dictionary:
+					if currentKey.has(searchKeys[key]):
+						currentKey = currentKey[searchKeys[key]]
+					else:
+						printerr("Error: Can't find key '%s' from the stack '%s'"%[searchKeys[key],searchKeys[0]])
+						return false
+				else:	# fail safe since we only care for nested dictionaries. 
+					break
+		return currentKey	
+	else:
+		printerr("Error: Expression incorrect %s"%searchKeys)
+		return false
 
-func _nested_state_reference(key: String, nestedKey: Array[RegExMatch], inject = true):
+func _nested_state_reference(key: String, nestedKey: Array[RegExMatch]):
 	#finds all the keys of a expression or ${variable}
-	var temp = [key]
-	if inject:
-		temp.append(key.left(key.find("[")))
+	var temp = [key,key.left(key.find("["))]
 
 	for i in nestedKey:
 		temp.append(i.get_string(1).replace("\"",""))
