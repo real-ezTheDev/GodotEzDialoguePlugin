@@ -18,9 +18,11 @@ var tests: Array[Callable] = [
 	_test_issue11_endofdialogue_detection,
 	_test_variable_injection_in_text,
 	_test_nested_variable_injection_in_text,
+	_test_missing_nested_variable_conditional,
 	_test_nested_variable_conditional,
 	_test_complex_nested_variable_conditional,
-	_test_null_variable_injection
+	_test_null_variable_injection,
+	_issue18_second_pass_expression_replacement_test
 ]
 
 func _ready():
@@ -176,7 +178,16 @@ func _test_nested_variable_conditional():
 	state["some_variable"]["nested_component"] = false
 	await tester.start_test(test_dialogue, test_name)
 	tester.assert_response("about to test nested variable in conditional.\nelse target reached.", [], true)
-	
+
+func _test_missing_nested_variable_conditional():
+	var test_name = "test_nested_variable_conditional"
+	var state = {
+		"some_variable": {}
+		}
+	tester.set_states(state)
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("about to test nested variable in conditional.\nelse target reached.", [], true)
+
 func _test_complex_nested_variable_conditional():
 	print("\tFirst Scenario...")
 	var test_name = "test_complex_nested_variable_conditional"
@@ -204,3 +215,19 @@ func _test_complex_nested_variable_conditional():
 	state["some_variable"]["nested_component_2"]["even_deeper_component"] = false
 	await tester.start_test(test_dialogue, test_name)
 	tester.assert_response("about to test nested variable in conditional.\nelse target reached.", [], true)
+
+func _issue18_second_pass_expression_replacement_test():
+	var test_name = "issue18_second_pass_expression_replacement_test"
+	var state = {
+		"variable": {
+			"key1": 414,
+			"key2": true,
+			"key3": 3.14159265358979,
+			"key4": "hello"
+		},
+		"variable_string": "anotherone"
+	}
+	tester.set_states(state)
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("starting test...\ntrue target reached.", [], true)
+	

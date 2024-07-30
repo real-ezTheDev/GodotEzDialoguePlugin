@@ -205,31 +205,44 @@ func _evaluate_conditional_expression(expression: String):
 	
 	var requiredVariables = []
 	var variable_pattern = RegEx.new()
-	variable_pattern.compile("[a-zA-Z_\\d]+(\\[\"[a-zA-Z_\\d]+?\"\\])*")
+	variable_pattern.compile("[\"a-zA-Z_\\d]+(\\[\"[a-zA-Z_\\d]+?\"\\])*")
 	var match_results = variable_pattern.search_all(expression)
 	var nestedVariableRegex = RegEx.new()
 	nestedVariableRegex.compile("(\"\\S+?\")")
 	
 	for variable_match in match_results:
-		var nestedResults = nestedVariableRegex.search_all(variable_match.get_string(0))
+		var extracted_pattern = variable_match.get_string(0)
+		if ["true", "false"].has(extracted_pattern)\
+			|| extracted_pattern.is_valid_float()\
+			|| extracted_pattern.is_valid_int() \
+			|| extracted_pattern.begins_with("\""):
+			continue
+
+		var nestedResults = nestedVariableRegex.search_all(extracted_pattern)
 		if nestedResults.size() > 0:
 			requiredVariables.push_back(
 				_nested_state_reference(variable_match.get_string(0), nestedResults))
 		else:
 			requiredVariables.push_back(variable_match.get_string(0))
-	
+
 	for variable in requiredVariables:
 		var value = "" 
 		if variable is Array:
 			value = _recursion_search_inject(_stateReference,variable,1)
-			if not value is String:
+			
+			if not value is String :
 				value = str(value)
+			else:
+				value = "\"" + value + "\""
+
 			workingExpression = workingExpression.replace(
 				variable[0], value)
 		else:
 			value = _stateReference.get(variable)
 			if not value is String:
 				value = str(value)
+			else:
+				value = "\"" + value + "\""
 			workingExpression = workingExpression.replace(
 				variable, value)
 		

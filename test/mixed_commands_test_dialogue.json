@@ -238,5 +238,15 @@
 			40,
 			-440
 		]
+	},
+	{
+		"commands_raw": "starting test...\n\n$if variable[\"key1\"] == 414 && variable[\"key2\"] == true && variable[\"key3\"] == 3.14159265358979 && variable[\"key4\"] == \"hello\" && true && variable_string == \"anotherone\" {\n    -> true_transition_target\n}\n$else {\n    -> else_transition_target\n}",
+		"gnode_name": "issue18_second_pass_expression_replacement_test",
+		"id": 24,
+		"name": "issue18_second_pass_expression_replacement_test",
+		"position": [
+			80,
+			1460
+		]
 	}
 ]
