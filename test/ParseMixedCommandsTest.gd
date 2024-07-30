@@ -171,10 +171,12 @@ func _test_nested_variable_conditional():
 			"nested_component": true
 		}
 		}
+	print("\tFirst Scenario...")
 	tester.set_states(state)
 	await tester.start_test(test_dialogue, test_name)
 	tester.assert_response("about to test nested variable in conditional.\ntrue target reached.", [], true)
 	
+	print("\tSecond Scenario...")
 	state["some_variable"]["nested_component"] = false
 	await tester.start_test(test_dialogue, test_name)
 	tester.assert_response("about to test nested variable in conditional.\nelse target reached.", [], true)
