@@ -245,12 +245,14 @@ func _evaluate_conditional_expression(expression: String):
 			
 	var parse_error = evaluation.parse(workingExpression)
 	if parse_error > 0:
-		printerr("Error: Can't find expression '%s' in the stateReference: %s"%[expression,_stateReference])
+		printerr("Error in [%s]: Can't find expression '%s' in the stateReference: %s"\
+			%[_get_current_node_name(), expression,_stateReference])
 		# Removing causes an error in debugger due to parsing failing and going into evaluation.execute() after failing.
 		return false 
 	var result = evaluation.execute()
 	if evaluation.has_execute_failed():
-		printerr("Conditional expression '%s' did not parse/execute correctly with state: %s"%[workingExpression, _stateReference])
+		printerr("Error in [%s]: Conditional expression '%s' did not parse/execute \
+			correctly with state: %s"%[_get_current_node_name(), workingExpression, _stateReference])
 		# failed expression statement is assumed falsy.
 		return false
 	return result
@@ -266,13 +268,15 @@ func _retrieve_nested_values(searchKeys: Array):
 					if currentKey.has(searchKeys[key]):
 						currentKey = currentKey[searchKeys[key]]
 					else:
-						printerr("Error: Can't find key '%s' from the stack '%s'"%[searchKeys[key],searchKeys[0]])
+						printerr("Error in [%s]: Can't find key '%s' from the stack '%s'"\
+							%[_get_current_node_name(), searchKeys[key],searchKeys[0]])
 						return false
 				else:	# fail safe since we only care for nested dictionaries. 
 					break
 		return currentKey	
 	else:
-		printerr("Error: Expression incorrect %s"%searchKeys)
+		printerr("Error in [%s]: Expression incorrect %s"\
+			%[_get_current_node_name(), searchKeys])
 		return false
 
 func _nested_state_reference(key: String, nestedKey: Array[RegExMatch]):
@@ -282,3 +286,7 @@ func _nested_state_reference(key: String, nestedKey: Array[RegExMatch]):
 	for i in nestedKey:
 		temp.append(i.get_string(1).replace("\"",""))
 	return temp
+
+# Retrieve the name of the dialogue node that the DialogueReader is currently processing.
+func _get_current_node_name() -> String:
+	return dialogue_visit_history[0]
