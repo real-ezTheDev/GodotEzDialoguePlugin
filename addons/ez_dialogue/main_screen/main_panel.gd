@@ -5,6 +5,8 @@ class_name MainDiagPanel extends Panel
 @onready var content_editor = $HSplitContainer/edit_container/content_editor
 @onready var edit_container = $HSplitContainer/edit_container
 @onready var draw_surface = $HSplitContainer/graph_container/draw_container
+@onready var search_text_input: LineEdit = $HSplitContainer/graph_container/SearchBar/MarginContainer/HBoxContainer/LineEdit
+@onready var search_bar = $HSplitContainer/graph_container/SearchBar
 
 @onready var dialogueNodes: Array[DialogueNode] = []
 @onready var nodeToOutputs = {}
@@ -35,7 +37,7 @@ func _is_dirty():
 func _mark_dirty():
 	$HSplitContainer/graph_container/HBoxContainer/dirty_marker.visible = true
 	$HSplitContainer/graph_container/HBoxContainer/save.disabled = false
-	
+
 func _mark_saved():
 	$HSplitContainer/graph_container/HBoxContainer/dirty_marker.visible = false
 	$HSplitContainer/graph_container/HBoxContainer/save.disabled = true
@@ -374,3 +376,13 @@ func _on_working_path_changed(path: String):
 	else:	
 		workingPath = path
 		$HSplitContainer/graph_container/HBoxContainer/fileNameLbl.text = workingPath
+
+func _on_node_search_text_submitted(node_name: String):
+	var dialogue_node: DialogueNode = _get_dialogue_node_by_name(node_name)
+	if dialogue_node:
+		draw_surface.center_on_node(dialogue_node)
+	else:
+		search_bar.warn_not_found()
+	
+func _on_node_search_text_changed(node_name: String):
+	search_bar.clear_warn()
