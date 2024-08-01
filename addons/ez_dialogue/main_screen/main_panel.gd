@@ -4,7 +4,7 @@ class_name MainDiagPanel extends Panel
 @onready var name_editor = $HSplitContainer/edit_container/name_editor
 @onready var content_editor = $HSplitContainer/edit_container/content_editor
 @onready var edit_container = $HSplitContainer/edit_container
-@onready var draw_surface = $HSplitContainer/graph_container/draw_container
+@onready var draw_surface = $HSplitContainer/graph_container/draw_container 
 @onready var search_text_input: LineEdit = $HSplitContainer/graph_container/SearchBar/MarginContainer/HBoxContainer/LineEdit
 @onready var search_bar = $HSplitContainer/graph_container/SearchBar
 

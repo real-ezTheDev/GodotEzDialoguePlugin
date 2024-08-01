@@ -1,3 +1,4 @@
+@tool
 extends GraphEdit
 
 # Centers the graph given the node name.

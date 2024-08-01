@@ -1,3 +1,4 @@
+@tool
 extends Panel
 
 @onready var not_found_warn_lbl = $MarginContainer/HBoxContainer/NotFoundLbl

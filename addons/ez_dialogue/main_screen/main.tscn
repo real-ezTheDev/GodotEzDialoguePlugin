@@ -95,7 +95,6 @@ text = "*"
 [node name="draw_container" type="GraphEdit" parent="HSplitContainer/graph_container"]
 layout_mode = 2
 size_flags_vertical = 3
-scroll_offset = Vector2(0, -49)
 script = ExtResource("2_6ptxg")
 
 [node name="SearchBar" type="Panel" parent="HSplitContainer/graph_container"]
