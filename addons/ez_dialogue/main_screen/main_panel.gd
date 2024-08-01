@@ -130,7 +130,7 @@ func _add_dialogue_node_graph(dialogue: DialogueNode, focus = false, position = 
 	if position:
 		node.position_offset = position
 	else:
-		node.position_offset = draw_surface.scroll_offset + (draw_surface.size*0.5)
+		node.position_offset = draw_surface.get_center_of_graph_position()
 	dialogue.gnode_name = node.name
 	return node
 
