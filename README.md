@@ -77,6 +77,8 @@ In the above example, when the choice "some choice txt" is selected, the system 
 2. emit custom signal with signal parameter "set,variable,2"
 3. transition to a node named "next node"
 
+> <i><b>NOTE</i></b> Sometimes you might want to have an "empty" choice to immediately end the dialogue after the player made a choice. You can make your prompt "do nothing" with the format `?> choice text {}`.
+
 #### Conditional
 To display or transition based on a state condition, you can use the conditional statement with a command `$if [condition] {...} $else {...}`
 
