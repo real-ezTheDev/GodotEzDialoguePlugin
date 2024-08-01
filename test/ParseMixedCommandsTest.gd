@@ -22,7 +22,8 @@ var tests: Array[Callable] = [
 	_test_nested_variable_conditional,
 	_test_complex_nested_variable_conditional,
 	_test_null_variable_injection,
-	_issue18_second_pass_expression_replacement_test
+	_issue18_second_pass_expression_replacement_test,
+	_test_dead_end_choice
 ]
 
 func _ready():
@@ -233,3 +234,12 @@ func _issue18_second_pass_expression_replacement_test():
 	await tester.start_test(test_dialogue, test_name)
 	tester.assert_response("starting test...\ntrue target reached.", [], true)
 	
+func _test_dead_end_choice():
+	var test_name = "test_deadend_choice"
+	var state = {}
+	tester.set_states(state)
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("dead end choice upcoming", ["option 1", "option 2"], false)
+	
+	await tester.resume_with_choice(1)
+	tester.assert_response("",[], true)

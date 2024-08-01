@@ -248,5 +248,15 @@
 			80,
 			1460
 		]
+	},
+	{
+		"commands_raw": "dead end choice upcoming\n?> option 1 {}\n?> option 2 {}",
+		"gnode_name": "test_deadend_choice",
+		"id": 25,
+		"name": "test_deadend_choice",
+		"position": [
+			80,
+			1600
+		]
 	}
 ]
