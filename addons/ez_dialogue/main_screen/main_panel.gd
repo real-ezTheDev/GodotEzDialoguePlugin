@@ -120,6 +120,7 @@ func _add_dialogue_node(node_name = "Diag Node"):
 	return dialogue
 	
 func _add_dialogue_node_graph(dialogue: DialogueNode, focus = false, position = null):
+	print(dialogue)
 	var node = dialogueGraphNodePrefab.instantiate()
 	node.title = dialogue.name + " #" + str(dialogue.id)
 	node.name = dialogue.name.strip_edges(true, true).to_lower()
@@ -352,9 +353,10 @@ func _on_open_file_dialog_file_selected(path):
 
 	#clear graph
 	draw_surface.clear_connections()
-	for childNode in draw_surface.get_children():
-		draw_surface.remove_child(childNode)
-		childNode.queue_free()
+	for child_node in draw_surface.get_children():
+		if child_node is GraphNode:
+			draw_surface.remove_child(child_node)
+			child_node.queue_free()
 	_init_state()
 	
 	dialogueNodes = resource.dialogue_nodes
