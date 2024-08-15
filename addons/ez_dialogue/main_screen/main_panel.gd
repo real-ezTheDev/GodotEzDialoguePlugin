@@ -58,9 +58,10 @@ func save(force_save: bool = false):
 func reset():
 	#clear graph
 	draw_surface.clear_connections()
-	for childNode in draw_surface.get_children():
-		draw_surface.remove_child(childNode)
-		childNode.queue_free()
+	for child_node in draw_surface.get_children():
+		if child_node is GraphNode:
+			draw_surface.remove_child(child_node)
+			child_node.queue_free()
 	_init_state()
 	_populate_editor_from_selections([])
 	#_mark_dirty()
