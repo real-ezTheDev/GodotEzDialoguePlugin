@@ -86,7 +86,6 @@ func next(choice_index: int = 0):
 	if is_running:
 		return
 	
-	dialogue_visit_history = []
 	if choice_index >= 0 && choice_index < _pending_choice_actions.size():
 		# select a choice
 		var commands = _pending_choice_actions[choice_index] as Array[DialogueCommand]
@@ -267,6 +266,13 @@ func _retrieve_nested_values(searchKeys: Array):
 				if currentKey is Dictionary:
 					if currentKey.has(searchKeys[key]):
 						currentKey = currentKey[searchKeys[key]]
+					else:
+						printerr("Error in [%s]: Can't find key '%s' from the stack '%s'"\
+							%[_get_current_node_name(), searchKeys[key],searchKeys[0]])
+						return false
+				elif currentKey is Resource:
+					if (currentKey as Resource).get(searchKeys[key]):
+						currentKey = (currentKey as Resource).get(searchKeys[key])
 					else:
 						printerr("Error in [%s]: Can't find key '%s' from the stack '%s'"\
 							%[_get_current_node_name(), searchKeys[key],searchKeys[0]])
