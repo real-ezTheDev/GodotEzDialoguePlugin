@@ -1,11 +1,11 @@
 [gd_scene load_steps=9 format=3 uid="uid://c4h2pps361nfk"]
 
-[ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/main_panel.gd" id="1_qjims"]
-[ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/draw_container.gd" id="2_6ptxg"]
+[ext_resource type="Script" uid="uid://ct3is1jerl48d" path="res://addons/ez_dialogue/main_screen/main_panel.gd" id="1_qjims"]
+[ext_resource type="Script" uid="uid://no41ehhy83ho" path="res://addons/ez_dialogue/main_screen/draw_container.gd" id="2_6ptxg"]
 [ext_resource type="FontFile" uid="uid://buwm2t0sdxgw" path="res://addons/ez_dialogue/main_screen/ProggyVector Regular.ttf" id="2_hauah"]
-[ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/name_editor.gd" id="2_tbf72"]
-[ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/ezd_syntax.gd" id="3_ew0wp"]
-[ext_resource type="Script" path="res://addons/ez_dialogue/main_screen/search_bar.gd" id="3_iwt5k"]
+[ext_resource type="Script" uid="uid://ct83qpngp3k2d" path="res://addons/ez_dialogue/main_screen/name_editor.gd" id="2_tbf72"]
+[ext_resource type="Script" uid="uid://be2h6nfew3adu" path="res://addons/ez_dialogue/main_screen/ezd_syntax.gd" id="3_ew0wp"]
+[ext_resource type="Script" uid="uid://dqkcyn4pkpcmv" path="res://addons/ez_dialogue/main_screen/search_bar.gd" id="3_iwt5k"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1vuf6"]
 

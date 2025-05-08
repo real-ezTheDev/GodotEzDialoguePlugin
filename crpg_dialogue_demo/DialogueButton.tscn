@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://dy3dxagvakhiy"]
 
-[ext_resource type="Script" path="res://crpg_dialogue_demo/DialogueButton.gd" id="1_uhhm3"]
+[ext_resource type="Script" uid="uid://ddk1guohseox0" path="res://crpg_dialogue_demo/DialogueButton.gd" id="1_uhhm3"]
 
 [node name="Button" type="Button"]
 script = ExtResource("1_uhhm3")
