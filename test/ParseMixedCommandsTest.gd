@@ -23,7 +23,8 @@ var tests: Array[Callable] = [
 	_test_complex_nested_variable_conditional,
 	_test_null_variable_injection,
 	_issue18_second_pass_expression_replacement_test,
-	_test_dead_end_choice
+	_test_dead_end_choice,
+	_test_not_conditional
 ]
 
 func _ready():
@@ -242,3 +243,22 @@ func _test_dead_end_choice():
 	
 	await tester.resume_with_choice(1)
 	tester.assert_response("",[], true)
+
+## Tests conditional with "not" evaluation
+func _test_not_conditional():
+	var test_name = "test_not_conditional_display"
+	var state = {"some_variable": true}
+	tester.set_states(state)
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("Resulting texts are\nSome variable is TRUE.", [], true)
+	
+	state["some_variable"] = false
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("Resulting texts are\nSome variable is FALSE.",[], true)
+	
+	# missing variable (<null>) should evaluate as true
+	state.erase("some_variable")
+	await tester.start_test(test_dialogue, test_name)
+	tester.assert_response("Resulting texts are\nSome variable is FALSE.", [], true)
+
+	

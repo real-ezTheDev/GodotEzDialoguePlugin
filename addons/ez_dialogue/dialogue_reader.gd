@@ -235,6 +235,9 @@ func _evaluate_conditional_expression(expression: String):
 				variable[0], value)
 		else:
 			value = _stateReference.get(variable)
+			if !value:
+				value = false
+				
 			if not value is String:
 				value = str(value)
 			else:
