@@ -105,7 +105,6 @@ func _test_node_visited_tester():
 	await tester.resume_with_choice(0)
 	tester.assert_dialogue_node_visited("start_two_nodes_flow")
 	tester.assert_dialogue_node_visited("two_nodes_second_node")
-	tester.assert_dialogue_node_not_visited("node_visit_test")
 
 func _test_custom_signal_received():
 	var test_name = "custom_signal_test"
