@@ -88,7 +88,6 @@ func _run_all_tests() -> void:
 func _run_test(test: Callable) -> void:
 	var name := test.get_method()
 	print("[ RUN  ] " + name)
-	var ok := true
 	# GDScript assert() raises a script error but doesn't throw an exception we
 	# can catch. We rely on Godot printing the assertion message to stderr and
 	# the test continuing. To detect failures we hook into the engine's error
