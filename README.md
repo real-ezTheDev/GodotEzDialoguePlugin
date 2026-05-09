@@ -4,6 +4,10 @@ EzDialogue is a Dialogue extension for Godot Game Engine.
 
 The Plugin provides ways to create and organize in-game dialogues by providing customized dialogue management tab in Godot Engine. Use EzDialogue's own scripting language to write dialogues, control narrative branches, and trigger custom in-game functions.
 
+**Documentation**
+- [Getting Started Guide](#) ← you are here
+- [Syntax Reference](SYNTAX_REFERENCE.md) — quick-lookup for every command, operator, and language rule
+
 ## Requirement
 
 EzDialogue plugin has only been tested with Godot v4.0+
@@ -129,6 +133,14 @@ Here are basic concepts in how the dialogue handler node works.
 7. If the signal `end_of_dialogue_reached`, there is no more dialogue to read in the current file. Therefore, end of the dialogue.
 
 For a basic and complete implementation of this see demo in [./crpg_dialogue_demo](https://github.com/real-ezTheDev/GodotEzDialoguePlugin/blob/dev/crpg_dialogue_demo)
+
+---
+
+## Syntax Reference
+
+For a full command reference — every operator, truthy/falsy rule, nested variable syntax, and a complete worked example — see the **[Syntax Reference](SYNTAX_REFERENCE.md)**.
+
+---
 
 ### Design Goals and Future Plans
 I believe between custom signal and other basic dialogue commands, there's a "round about" way to do pretty much anything one would desire. However, some of the "round about" solution might end up being very inconvenient, and I would like to resolve them as they come up. So, please feel free to share any thoughts and suggestions.

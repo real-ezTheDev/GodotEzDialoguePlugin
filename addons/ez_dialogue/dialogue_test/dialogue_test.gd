@@ -10,7 +10,7 @@ var _response: DialogueResponse
 var _custom_signal_responses: Array[String]
 
 
-func _init(_dialogue_reader: EzDialogue):
+func _init(_dialogue_reader: EzDialogueReader):
 	dialogue_reader = _dialogue_reader
 	dialogue_reader.custom_signal_received.connect(_on_custom_signal_received)
 

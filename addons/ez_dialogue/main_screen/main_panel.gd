@@ -56,15 +56,17 @@ func save(force_save: bool = false):
 		_mark_saved()
 
 func reset():
-	#clear graph
+	_clear_graph()
+	_populate_editor_from_selections([])
+
+# Extract shared graph-clearing logic used by both reset() and file open.
+func _clear_graph():
 	draw_surface.clear_connections()
 	for child_node in draw_surface.get_children():
 		if child_node is GraphNode:
 			draw_surface.remove_child(child_node)
 			child_node.queue_free()
 	_init_state()
-	_populate_editor_from_selections([])
-	#_mark_dirty()
 	
 func _process(delta):
 	# update parse if hasn't been updated in set time.
@@ -121,7 +123,6 @@ func _add_dialogue_node(node_name = "Diag Node"):
 	return dialogue
 	
 func _add_dialogue_node_graph(dialogue: DialogueNode, focus = false, position = null):
-	print(dialogue)
 	var node = dialogueGraphNodePrefab.instantiate()
 	node.title = dialogue.name + " #" + str(dialogue.id)
 	node.name = dialogue.name.strip_edges(true, true).to_lower()
@@ -348,18 +349,11 @@ func _on_save_file_dialog_file_selected(path):
 
 func _on_open_file_dialog_file_selected(path):
 	var file = FileAccess.open(path, FileAccess.READ)
-	var content = file.get_as_text()
 	var resource: DialogueResource = DialogueResource.new()
 	resource.loadFromText(file.get_as_text())
 
-	#clear graph
-	draw_surface.clear_connections()
-	for child_node in draw_surface.get_children():
-		if child_node is GraphNode:
-			draw_surface.remove_child(child_node)
-			child_node.queue_free()
-	_init_state()
-	
+	_clear_graph()
+
 	dialogueNodes = resource.dialogue_nodes
 
 	#redraw graph

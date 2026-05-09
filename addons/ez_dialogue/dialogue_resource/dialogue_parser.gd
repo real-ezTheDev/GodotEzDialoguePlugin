@@ -1,315 +1,400 @@
 @tool
 class_name DialogueParser extends RefCounted
 
-# Parse the given dialogue script String in to 
-# list of "possibly" nested [DialogueCommand]s.
-func parse(dialogue_script: String):
+# Parse the given dialogue script String into
+# a list of (possibly nested) [DialogueCommand]s.
+func parse(dialogue_script: String) -> Array[DialogueCommand]:
 	var rootParse: Array[DialogueCommand] = []
 	rootParse.push_back(
 		DialogueCommand.new(0, 0, DialogueCommand.CommandType.ROOT))
 	var n = 0
 	while n < dialogue_script.length():
 		n = _parse_statement(n, dialogue_script, rootParse)
-	
 	return rootParse
-	
 
-# satement parser.
-func _parse_statement(i: int, raw: String, parseProgress: Array[DialogueCommand]):
-	var conditional_operator = "$if"
-	var else_operator = "$else"
-	
+
+# Statement parser. Returns the next index to continue parsing from.
+func _parse_statement(i: int, raw: String, parseProgress: Array[DialogueCommand]) -> int:
+	const CONDITIONAL_OP := "$if"
+	const ELIF_OP        := "$elif"
+	const ELSE_OP        := "$else"
+
 	if i >= raw.length():
 		return i
 
-	var currentLine = raw.count("\n", 0, max(i, 1)) + 1
-	var inLinePos = i - raw.substr(0, i).rfind("\n") - 1
-	if _peek_and_match("\\", i, raw):
-		# escape character "\" detected, store following letter as plain text.
-		if i + 1 >= raw.length():
-			# out of bound, next letter is not availalbe.
-			return i + 1
+	var currentLine := raw.count("\n", 0, max(i, 1)) + 1
+	var inLinePos   := i - raw.substr(0, i).rfind("\n") - 1
 
+	# --- Escape character ---
+	if _peek_and_match("\\", i, raw):
+		if i + 1 >= raw.length():
+			return i + 1
 		_add_letters_progress(
-			raw[i] + raw[i+1],
+			raw[i] + raw[i + 1],
 			parseProgress[0].children,
-			currentLine,
-			inLinePos,
+			currentLine, inLinePos,
 			DialogueCommand.CommandType.DISPLAY_TEXT)
 		return i + 2
+
+	# --- Prompt / choice: ?> ---
 	elif _peek_and_match("?>", i, raw):
-		# prompt can take either bracket { } as child or directly take goto (->)
-		var prompt_command = DialogueCommand.new(
-			currentLine,
-			inLinePos,
-			DialogueCommand.CommandType.PROMPT,
-			[""],
-			[])
-		var next_index = _parse_prompt_command(i + 2 , raw, prompt_command)
+		var prompt_command := DialogueCommand.new(
+			currentLine, inLinePos,
+			DialogueCommand.CommandType.PROMPT, [""], [])
+		var next_index := _parse_prompt_command(i + 2, raw, prompt_command)
 		parseProgress[0].children.push_back(prompt_command)
-		if prompt_command.children.size() > 0 && prompt_command.children[0].type == DialogueCommand.CommandType.BRACKET:
+		if prompt_command.children.size() > 0 \
+				&& prompt_command.children[0].type == DialogueCommand.CommandType.BRACKET:
 			parseProgress.push_front(prompt_command.children[0])
-		
 		return next_index
+
+	# --- Go To: -> ---
 	elif _peek_and_match("->", i, raw):
-		var terminating = RegEx.new()
+		var terminating := RegEx.new()
 		terminating.compile("\\n")
-		var gotoNodeName = _collect_characters(i+2, raw, terminating)
-		var gotoCommand = DialogueCommand.new(
-			currentLine, inLinePos, DialogueCommand.CommandType.GOTO,[gotoNodeName])
-		parseProgress[0].children.push_back(gotoCommand)
-		return i + 2 + gotoNodeName.length()
-	elif _peek_and_match("signal(", i, raw):
-		var terminating = RegEx.new()
-		terminating.compile("\\)")
-		var signalName = _collect_characters(i + 7, raw, terminating)
+		var gotoNodeName := _collect_characters(i + 2, raw, terminating)
 		parseProgress[0].children.push_back(
 			DialogueCommand.new(
-				currentLine,
-				inLinePos,
-				DialogueCommand.CommandType.SIGNAL,
-				[signalName]))
-		var nextIndex = i + 7 + signalName.length()
-		var end_position = _get_position_from_index(nextIndex, raw)
+				currentLine, inLinePos,
+				DialogueCommand.CommandType.GOTO, [gotoNodeName]))
+		return i + 2 + gotoNodeName.length()
+
+	# --- Custom signal: signal(...) ---
+	elif _peek_and_match("signal(", i, raw):
+		var terminating := RegEx.new()
+		terminating.compile("\\)")
+		var signalParams := _collect_characters(i + 7, raw, terminating)
+		parseProgress[0].children.push_back(
+			DialogueCommand.new(
+				currentLine, inLinePos,
+				DialogueCommand.CommandType.SIGNAL, [signalParams]))
+		var nextIndex := i + 7 + signalParams.length()
 		if _peek_and_match(")", nextIndex, raw):
 			nextIndex += 1
 		else:
-			printerr(
-				"Error at (line: %d, pos: %d): Expected ')' at the end of 'signal(...'" % [end_position["line"], end_position["pos"]])
-		return i + 7 + signalName.length() + 1
-	elif _peek_and_match(conditional_operator, i, raw):
-		var terminating = RegEx.new()
-		terminating.compile("->|{")
-		var expression_string = _collect_characters(
-			i + conditional_operator.length(), raw, terminating)
-		var conditional_children: Array[DialogueCommand] = []
-		var result = DialogueCommand.new(
-			currentLine,
-			inLinePos,
-			DialogueCommand.CommandType.CONDITIONAL,
-			[expression_string],
-			conditional_children)
-		
-		parseProgress[0].children.push_back(result)
-		
-		var nextIndex = i + conditional_operator.length() + expression_string.length()
-		var end_position = _get_position_from_index(nextIndex, raw)
-		if _is_bracket_start(nextIndex, raw):
-			var bracket = DialogueCommand.new(
-				end_position["line"],
-				end_position["pos"],
-				DialogueCommand.CommandType.BRACKET
-			)
-			conditional_children.push_back(bracket)
-			parseProgress.push_front(bracket)
-			nextIndex += 1
-		elif _peek_and_match("->", nextIndex, raw):
-			var gotoTerm = RegEx.new()
-			gotoTerm.compile("\\n")
-			var gotoNodeName = _collect_characters(nextIndex+2, raw, gotoTerm)
-			var gotoCommand = DialogueCommand.new(
-				end_position["line"],
-				end_position["pos"],
-				DialogueCommand.CommandType.GOTO
-				[gotoNodeName])
-			conditional_children.push_back(gotoCommand)
-			nextIndex += 2 + gotoNodeName.length()
-		else:
-			printerr(
-				"Error at (line: %d, pos: %d): Expected '{' at the end of '%s'" \
-				% [ end_position["line"],
-					end_position["pos"],
-					conditional_operator])
+			var ep := _get_position_from_index(nextIndex, raw)
+			printerr("Error at (line: %d, pos: %d): Expected ')' at end of 'signal('" \
+				% [ep["line"], ep["pos"]])
 		return nextIndex
-	elif _peek_and_match(else_operator, i, raw):
-		# checking for last item of the current command's children for CONDITIONAL
-		if parseProgress[0].children[-1].type == DialogueCommand.CommandType.CONDITIONAL:
-			# else only is accepted when there's an $if right before
-			var elseChildren: Array[DialogueCommand] = []
-			var result = DialogueCommand.new(
-				currentLine,
-				inLinePos,
-				DialogueCommand.CommandType.ELSE,
-				[],
-				elseChildren)
-			var nextPosition = i + 1
-			
-			# skip whitespace after '$else' to find '{' or '->'
-			var bracketRegex = RegEx.new()
-			bracketRegex.compile("\\s*?{")
-			var bracketMatch = bracketRegex.search(raw, nextPosition)
-			
-			var gotoRegex = RegEx.new()
-			gotoRegex.compile("\\s*?->")
-			var gotoMatch = gotoRegex.search(raw, nextPosition)
-			
-			if bracketMatch:
-				# '{' found
-				nextPosition = bracketMatch.get_end()
-				var end_position = _get_position_from_index(nextPosition, raw)
 
-				var bracket = DialogueCommand.new(
-					end_position["line"],
-					end_position["pos"],
-					DialogueCommand.CommandType.BRACKET
-				)
+	# --- $elif (must be checked before $else and $if) ---
+	elif _peek_and_match(ELIF_OP, i, raw):
+		return _parse_elif(i, raw, parseProgress, currentLine, inLinePos, ELIF_OP)
 
-				elseChildren.push_back(bracket)
-				parseProgress[0].children.push_back(result)
-				parseProgress.push_front(bracket)
-				return nextPosition + 1
-			elif gotoMatch:
-				nextPosition = gotoMatch.get_end()
-				var gotoTerm = RegEx.new()
-				gotoTerm.compile("\\n")
-				var gotoNodeName = _collect_characters(nextPosition, raw, gotoTerm)
-				var end_position = _get_position_from_index(nextPosition, raw)
-				var gotoCommand = DialogueCommand.new(
-					end_position["line"],
-					end_position["pos"],
-					DialogueCommand.CommandType.GOTO
-					[gotoNodeName])
-				elseChildren.push_back(gotoCommand)
-				return nextPosition + gotoNodeName.length()
-			else:
-				printerr(
-					"Error at (line: %d, pos: %d): You need '{' after '$else'." \
-					% [currentLine, inLinePos])
-				pass
-		else:
-			printerr(
-				"Error at (line: %d, pos: %d): '$else' can only be used after \
-				an '$if' block" % [currentLine, inLinePos])
-		pass
+	# --- $if ---
+	elif _peek_and_match(CONDITIONAL_OP, i, raw):
+		return _parse_conditional(i, raw, parseProgress, currentLine, inLinePos, CONDITIONAL_OP)
+
+	# --- $else ---
+	elif _peek_and_match(ELSE_OP, i, raw):
+		return _parse_else(i, raw, parseProgress, currentLine, inLinePos)
+
+	# --- Opening bracket: { ---
 	elif _is_bracket_start(i, raw):
-		var bracket = DialogueCommand.new(
-			currentLine,
-			inLinePos,
-			DialogueCommand.CommandType.BRACKET
-		)
+		var bracket := DialogueCommand.new(
+			currentLine, inLinePos, DialogueCommand.CommandType.BRACKET)
 		parseProgress[0].children.push_back(bracket)
 		parseProgress.push_front(bracket)
 		return i + 1
-	elif _peek_and_match("}", i , raw):
-		if parseProgress[0].type == DialogueCommand.CommandType.BRACKET:
-			# end of bracket pop stck.
-			parseProgress.pop_front()
-			return i + 1
-		#printerr(
-		#	"Error at (line: %d, pos: %d): Found '}' with no matching '{' before" % [currentLine, inLinePos])
-	elif _peek_and_match("---", i, raw):
-		var result: DialogueCommand = DialogueCommand.new(
-			currentLine, inLinePos, DialogueCommand.CommandType.PAGE_BREAK)
-		parseProgress[0].children.push_back(result)
-		return i + 3
-	
-	var variableInjectRegex = RegEx.new()
-	variableInjectRegex.compile("\\${\\S+?}")
-	var varInjectMatch = variableInjectRegex.search(raw, i)
 
-	if varInjectMatch && varInjectMatch.get_start() == i:
-		_add_letters_progress(
-			varInjectMatch.get_string(),
-			parseProgress[0].children,
-			currentLine,
-			inLinePos,
-			DialogueCommand.CommandType.DISPLAY_TEXT)
-		return i + varInjectMatch.get_string().length()
-	else:
-		# no special keyword ==> LETTERS
-		_add_letters_progress(
-			raw[i], parseProgress[0].children, currentLine, inLinePos, DialogueCommand.CommandType.DISPLAY_TEXT)
+	# --- Closing bracket: } ---
+	elif _peek_and_match("}", i, raw):
+		if parseProgress[0].type == DialogueCommand.CommandType.BRACKET:
+			parseProgress.pop_front()
 		return i + 1
 
-# Parse for children / value components of a PROMPT command.
-func _parse_prompt_command(i: int, raw: String, promptCommand: DialogueCommand):
-	# collect as DISPLAY_TEXT the prompt statement and terminate prompt parsing on bracket or GOTO.
+	# --- Page break: --- ---
+	elif _peek_and_match("---", i, raw):
+		parseProgress[0].children.push_back(
+			DialogueCommand.new(
+				currentLine, inLinePos, DialogueCommand.CommandType.PAGE_BREAK))
+		return i + 3
+
+	# --- Plain text (bulk collection for performance) ---
+	# Collect as many plain-text characters as possible in one pass instead of
+	# advancing one character at a time, which was O(n) function calls for text.
+	return _collect_plain_text(i, raw, parseProgress, currentLine, inLinePos)
+
+
+# Collect a run of plain text up to the next special character or ${...} injection.
+func _collect_plain_text(
+		i: int, raw: String,
+		parseProgress: Array[DialogueCommand],
+		currentLine: int, inLinePos: int) -> int:
+
+	# Check for a ${...} variable injection starting right here.
+	var varInjectRegex := RegEx.new()
+	varInjectRegex.compile("\\${\\S+?}")
+	var varMatch := varInjectRegex.search(raw, i)
+	if varMatch && varMatch.get_start() == i:
+		_add_letters_progress(
+			varMatch.get_string(),
+			parseProgress[0].children,
+			currentLine, inLinePos,
+			DialogueCommand.CommandType.DISPLAY_TEXT)
+		return i + varMatch.get_string().length()
+
+	# Collect plain characters until we hit a special token or end of string.
+	# Special starters: \ ? - $ s(ignal) { } -
+	var j := i
+	while j < raw.length():
+		var c := raw[j]
+		# Any of these could start a special command — stop and let the main
+		# loop dispatch them properly on the next iteration.
+		if c == "\\" or c == "?" or c == "-" or c == "$" or c == "{" or c == "}":
+			break
+		# "signal(" starts with 's' — only break on 's' when it actually matches.
+		if c == "s" && _peek_and_match("signal(", j, raw):
+			break
+		j += 1
+
+	if j > i:
+		var chunk := raw.substr(i, j - i)
+		_add_letters_progress(
+			chunk,
+			parseProgress[0].children,
+			currentLine, inLinePos,
+			DialogueCommand.CommandType.DISPLAY_TEXT)
+		return j
+
+	# Single unrecognised character — advance by one to avoid an infinite loop.
+	_add_letters_progress(
+		raw[i],
+		parseProgress[0].children,
+		currentLine, inLinePos,
+		DialogueCommand.CommandType.DISPLAY_TEXT)
+	return i + 1
+
+
+# Parse a $if block.
+func _parse_conditional(
+		i: int, raw: String, parseProgress: Array[DialogueCommand],
+		currentLine: int, inLinePos: int, op: String) -> int:
+
+	var terminating := RegEx.new()
+	terminating.compile("->|{")
+	var expression_string := _collect_characters(i + op.length(), raw, terminating)
+	var conditional_children: Array[DialogueCommand] = []
+	var result := DialogueCommand.new(
+		currentLine, inLinePos,
+		DialogueCommand.CommandType.CONDITIONAL,
+		[expression_string],
+		conditional_children)
+	parseProgress[0].children.push_back(result)
+
+	var nextIndex := i + op.length() + expression_string.length()
+	var ep := _get_position_from_index(nextIndex, raw)
+
+	if _is_bracket_start(nextIndex, raw):
+		var bracket := DialogueCommand.new(
+			ep["line"], ep["pos"], DialogueCommand.CommandType.BRACKET)
+		conditional_children.push_back(bracket)
+		parseProgress.push_front(bracket)
+		nextIndex += 1
+	elif _peek_and_match("->", nextIndex, raw):
+		var gotoTerm := RegEx.new()
+		gotoTerm.compile("\\n")
+		var gotoNodeName := _collect_characters(nextIndex + 2, raw, gotoTerm)
+		conditional_children.push_back(
+			DialogueCommand.new(
+				ep["line"], ep["pos"],
+				DialogueCommand.CommandType.GOTO, [gotoNodeName]))
+		nextIndex += 2 + gotoNodeName.length()
+	else:
+		printerr("Error at (line: %d, pos: %d): Expected '{' or '->' after '%s'" \
+			% [ep["line"], ep["pos"], op])
+	return nextIndex
+
+
+# Parse a $elif block.
+# $elif is syntactic sugar: it is stored as a CONDITIONAL command that is only
+# reached when all preceding $if / $elif branches were falsy (the reader skips
+# remaining ELIF/ELSE commands once a branch is taken, just like it does for ELSE).
+func _parse_elif(
+		i: int, raw: String, parseProgress: Array[DialogueCommand],
+		currentLine: int, inLinePos: int, op: String) -> int:
+
+	# $elif is only valid after a CONDITIONAL or another ELIF.
+	var last_child_type := _last_child_type(parseProgress[0].children)
+	if last_child_type != DialogueCommand.CommandType.CONDITIONAL \
+			&& last_child_type != DialogueCommand.CommandType.ELIF:
+		printerr("Error at (line: %d, pos: %d): '$elif' can only follow a '$if' or '$elif' block" \
+			% [currentLine, inLinePos])
+		return i + op.length()
+
+	var terminating := RegEx.new()
+	terminating.compile("->|{")
+	var expression_string := _collect_characters(i + op.length(), raw, terminating)
+	var elif_children: Array[DialogueCommand] = []
+	var result := DialogueCommand.new(
+		currentLine, inLinePos,
+		DialogueCommand.CommandType.ELIF,
+		[expression_string],
+		elif_children)
+	parseProgress[0].children.push_back(result)
+
+	var nextIndex := i + op.length() + expression_string.length()
+	var ep := _get_position_from_index(nextIndex, raw)
+
+	if _is_bracket_start(nextIndex, raw):
+		var bracket := DialogueCommand.new(
+			ep["line"], ep["pos"], DialogueCommand.CommandType.BRACKET)
+		elif_children.push_back(bracket)
+		parseProgress.push_front(bracket)
+		nextIndex += 1
+	elif _peek_and_match("->", nextIndex, raw):
+		var gotoTerm := RegEx.new()
+		gotoTerm.compile("\\n")
+		var gotoNodeName := _collect_characters(nextIndex + 2, raw, gotoTerm)
+		elif_children.push_back(
+			DialogueCommand.new(
+				ep["line"], ep["pos"],
+				DialogueCommand.CommandType.GOTO, [gotoNodeName]))
+		nextIndex += 2 + gotoNodeName.length()
+	else:
+		printerr("Error at (line: %d, pos: %d): Expected '{' or '->' after '$elif'" \
+			% [ep["line"], ep["pos"]])
+	return nextIndex
+
+
+# Parse a $else block.
+func _parse_else(
+		i: int, raw: String, parseProgress: Array[DialogueCommand],
+		currentLine: int, inLinePos: int) -> int:
+
+	var last_child_type := _last_child_type(parseProgress[0].children)
+	if last_child_type != DialogueCommand.CommandType.CONDITIONAL \
+			&& last_child_type != DialogueCommand.CommandType.ELIF:
+		printerr("Error at (line: %d, pos: %d): '$else' can only follow a '$if' or '$elif' block" \
+			% [currentLine, inLinePos])
+		return i + 1
+
+	var elseChildren: Array[DialogueCommand] = []
+	var result := DialogueCommand.new(
+		currentLine, inLinePos,
+		DialogueCommand.CommandType.ELSE, [], elseChildren)
+
+	# Skip whitespace after '$else' to find '{' or '->'.
+	var bracketRegex := RegEx.new()
+	bracketRegex.compile("\\s*?{")
+	var bracketMatch := bracketRegex.search(raw, i + 1)
+
+	var gotoRegex := RegEx.new()
+	gotoRegex.compile("\\s*?->")
+	var gotoMatch := gotoRegex.search(raw, i + 1)
+
+	if bracketMatch && (gotoMatch == null || bracketMatch.get_start() <= gotoMatch.get_start()):
+		var nextPosition := bracketMatch.get_end()
+		var ep := _get_position_from_index(nextPosition, raw)
+		var bracket := DialogueCommand.new(
+			ep["line"], ep["pos"], DialogueCommand.CommandType.BRACKET)
+		elseChildren.push_back(bracket)
+		parseProgress[0].children.push_back(result)
+		parseProgress.push_front(bracket)
+		return nextPosition + 1
+	elif gotoMatch:
+		var nextPosition := gotoMatch.get_end()
+		var gotoTerm := RegEx.new()
+		gotoTerm.compile("\\n")
+		var gotoNodeName := _collect_characters(nextPosition, raw, gotoTerm)
+		var ep := _get_position_from_index(nextPosition, raw)
+		elseChildren.push_back(
+			DialogueCommand.new(
+				ep["line"], ep["pos"],
+				DialogueCommand.CommandType.GOTO, [gotoNodeName]))
+		parseProgress[0].children.push_back(result)
+		return nextPosition + gotoNodeName.length()
+	else:
+		printerr("Error at (line: %d, pos: %d): Expected '{' or '->' after '$else'" \
+			% [currentLine, inLinePos])
+		return i + 1
+
+
+# Parse the label and child commands of a PROMPT (?>) command.
+func _parse_prompt_command(i: int, raw: String, promptCommand: DialogueCommand) -> int:
 	if i >= raw.length():
 		return i
 
-	var character_pos = _get_position_from_index(i, raw)
+	var character_pos := _get_position_from_index(i, raw)
+
 	if _peek_and_match("\\", i, raw):
-		# escape character "\" detected, store following letter as plain text.
 		if i + 1 >= raw.length():
-			# out of bound, next letter is not availalbe.
 			return i + 1
-		
-		promptCommand.values[0] += raw[i] + raw[i+1]
+		promptCommand.values[0] += raw[i] + raw[i + 1]
 		return _parse_prompt_command(i + 2, raw, promptCommand)
 	elif _peek_and_match("${", i, raw):
-		pass
-	elif _peek_and_match("{", i , raw):
-		var bracket = DialogueCommand.new(
-			character_pos["line"],
-			character_pos["pos"],
-			DialogueCommand.CommandType.BRACKET
-		)
+		# Variable injection inside prompt label — collect and append.
+		var varRegex := RegEx.new()
+		varRegex.compile("\\${\\S+?}")
+		var varMatch := varRegex.search(raw, i)
+		if varMatch && varMatch.get_start() == i:
+			promptCommand.values[0] += varMatch.get_string()
+			return _parse_prompt_command(i + varMatch.get_string().length(), raw, promptCommand)
+		# Malformed ${, fall through to plain char.
+	elif _peek_and_match("{", i, raw):
+		var bracket := DialogueCommand.new(
+			character_pos["line"], character_pos["pos"],
+			DialogueCommand.CommandType.BRACKET)
 		promptCommand.children.push_back(bracket)
 		return i + 1
 	elif _peek_and_match("->", i, raw):
-		var gotoTerm = RegEx.new()
+		var gotoTerm := RegEx.new()
 		gotoTerm.compile("\\n")
-		var gotoNodeName = _collect_characters(i+2, raw, gotoTerm)
-		var gotoCommand = DialogueCommand.new(
-			character_pos["line"],
-			character_pos["pos"],
-			DialogueCommand.CommandType.GOTO,
-			[gotoNodeName])
-		promptCommand.children.push_back(gotoCommand)
+		var gotoNodeName := _collect_characters(i + 2, raw, gotoTerm)
+		promptCommand.children.push_back(
+			DialogueCommand.new(
+				character_pos["line"], character_pos["pos"],
+				DialogueCommand.CommandType.GOTO, [gotoNodeName]))
 		return i + 2 + gotoNodeName.length()
-	
-	var variableInjectRegex = RegEx.new()
-	variableInjectRegex.compile("\\${\\S+?}")
-	var varInjectMatch = variableInjectRegex.search(raw, i)
-	if varInjectMatch && varInjectMatch.get_start() == i:
-		promptCommand.values[0] += varInjectMatch.get_string()
-		return _parse_prompt_command(i + varInjectMatch.get_string().length(), raw, promptCommand)
-	else:
-		promptCommand.values[0] += raw[i]
-		return _parse_prompt_command(i + 1, raw, promptCommand)
-	
-# Collect values in raw String starting from 'starting' index until 'terminating' character is found.
-func _collect_characters(starting: int, raw: String, terminating: RegEx):
-	var result = ""
-	var match = terminating.search(raw, starting)
-	if match:
-		return raw.substr(starting, match.get_start() - starting)
+
+	promptCommand.values[0] += raw[i]
+	return _parse_prompt_command(i + 1, raw, promptCommand)
+
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+
+# Collect characters from [starting] until [terminating] regex matches.
+func _collect_characters(starting: int, raw: String, terminating: RegEx) -> String:
+	var m := terminating.search(raw, starting)
+	if m:
+		return raw.substr(starting, m.get_start() - starting)
 	return raw.substr(starting)
 
-func _is_previous_parse_type(type: DialogueCommand.CommandType, parseProgress: Array[DialogueCommand]):
+func _is_previous_parse_type(
+		type: DialogueCommand.CommandType,
+		parseProgress: Array[DialogueCommand]) -> bool:
 	if parseProgress.is_empty():
 		return false
-		
 	return parseProgress[-1].type == type
 
-func _add_letters_progress(letter: String, parseProgress: Array, currentLine: int, currentPos: int, type: DialogueCommand.CommandType):
+# Returns the CommandType of the last child in [children], or UNKNOWN if empty.
+func _last_child_type(children: Array[DialogueCommand]) -> DialogueCommand.CommandType:
+	if children.is_empty():
+		return DialogueCommand.CommandType.UNKNOWN
+	return children[-1].type
+
+func _add_letters_progress(
+		letter: String, parseProgress: Array,
+		currentLine: int, currentPos: int,
+		type: DialogueCommand.CommandType) -> void:
 	if _is_previous_parse_type(type, parseProgress):
-		# merge to previous "letters" type parse
+		# Merge into the previous run of the same type.
 		parseProgress[-1].values[0] += letter
 	elif letter == " " || letter == "\t" || letter == "\n":
 		return
 	else:
-		# start new "letters" type parse
-		var result = DialogueCommand.new(
-			currentLine,
-			currentPos,
-			type,
-			[letter])
-		parseProgress.push_back(result)
+		parseProgress.push_back(
+			DialogueCommand.new(currentLine, currentPos, type, [letter]))
 
 func _peek_and_match(find: String, start: int, raw: String) -> bool:
 	if start < 0 || start > raw.length():
 		return false
-
 	return raw.substr(start, find.length()) == find
 
-func _is_bracket_start(i: int, raw: String):
-	return _peek_and_match("{", i, raw) && !_peek_and_match("$", i-1, raw)
+func _is_bracket_start(i: int, raw: String) -> bool:
+	return _peek_and_match("{", i, raw) && !_peek_and_match("$", i - 1, raw)
 
-func _get_position_from_index(i: int, raw: String):
-	var lineNumber = raw.count("\n", 0, max(i, 1)) + 1
-	var characterNumber = i - raw.substr(0, i).rfind("\n") - 1
-	return {
-		"line": lineNumber,
-		"pos": characterNumber
-	}
+func _get_position_from_index(i: int, raw: String) -> Dictionary:
+	var lineNumber := raw.count("\n", 0, max(i, 1)) + 1
+	var characterNumber := i - raw.substr(0, i).rfind("\n") - 1
+	return { "line": lineNumber, "pos": characterNumber }

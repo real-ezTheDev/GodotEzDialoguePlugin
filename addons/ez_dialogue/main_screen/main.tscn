@@ -15,6 +15,8 @@ textColor = Color(0.85098, 0.592157, 0.254902, 1)
 specialColor = Color(0.317647, 0.6, 0.878431, 1)
 constantColor = Color(0.721569, 0.243137, 0.243137, 1)
 operatorColor = Color(0.447059, 0.815686, 0.878431, 1)
+expressionColor = Color(0.6, 0.85, 0.5, 1)
+variableColor = Color(0.95, 0.78, 0.35, 1)
 metadata/_editor_prop_ptr_textColor = NodePath("")
 
 [node name="main" type="Panel"]
