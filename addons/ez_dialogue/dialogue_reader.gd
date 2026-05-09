@@ -18,6 +18,7 @@ signal custom_signal_received(value)
 ## Maximum number of commands processed per _process() frame.
 ## Prevents a very long chain of GOTOs from spiking a single frame.
 ## Remaining work carries over to the next frame automatically.
+## The in-progress response is preserved across frames.
 const MAX_COMMANDS_PER_FRAME := 500
 
 var is_running := false
@@ -32,32 +33,39 @@ var dialogue_visit_history: Array[String]
 var _pending_choice_actions: Array
 var _stateReference: Dictionary
 
+# Preserved across frames when MAX_COMMANDS_PER_FRAME is hit mid-run.
+var _current_response: DialogueResponse
+
 
 func _process(_delta: float) -> void:
 	if not is_running:
 		return
 
-	var response := DialogueResponse.new()
+	# Reuse the in-progress response if we carried over from a previous frame.
+	if _current_response == null:
+		_current_response = DialogueResponse.new()
+
 	var commands_this_frame := 0
 
 	while is_running:
 		if _executing_command_stack.is_empty():
 			is_running = false
 			if _pending_choice_actions.is_empty():
-				response.eod_reached = true
+				_current_response.eod_reached = true
 				end_of_dialogue_reached.emit()
 			break
 
-		_process_command(_executing_command_stack.pop_front(), response)
+		_process_command(_executing_command_stack.pop_front(), _current_response)
 
 		commands_this_frame += 1
 		if commands_this_frame >= MAX_COMMANDS_PER_FRAME:
-			# Carry over to next frame — do NOT emit yet.
-			# is_running stays true so _process picks up next frame.
-			# We only emit when we actually pause (page break / eod / prompt).
+			# Carry over to next frame — preserve _current_response and return
+			# without emitting. is_running stays true so _process resumes.
 			return
 
-	dialogue_generated.emit(response)
+	# Dialogue paused (page break / prompt / eod) — emit and clear.
+	dialogue_generated.emit(_current_response)
+	_current_response = null
 
 
 ## Load and start processing the dialogue from [param starting_node_name].
@@ -74,6 +82,7 @@ func start_dialogue(
 	var starting_node := _processing_dialogue.get_node_by_name(starting_node_name)
 	_executing_command_stack = starting_node.get_parse()
 	_pending_choice_actions = []
+	_current_response = null
 	dialogue_visit_history = [starting_node.name]
 	_stateReference = state
 	is_running = true
@@ -103,6 +112,7 @@ func next(choice_index: int = 0) -> void:
 		_pending_choice_actions = []
 	# else: resume the existing stack as-is
 
+	_current_response = null
 	is_running = true
 
 
@@ -122,8 +132,7 @@ func _process_command(command: DialogueCommand, response: DialogueResponse) -> v
 			_executing_command_stack = front
 
 		DialogueCommand.CommandType.DISPLAY_TEXT:
-			var display_text: String = \
-				_inject_variable_to_text(command.values[0].strip_edges(true, true))
+			var display_text: String = _inject_variable_to_text((command.values[0] as String).strip_edges(true, true))
 			response.append_text(display_text)
 
 		DialogueCommand.CommandType.PAGE_BREAK:
@@ -218,23 +227,32 @@ func _inject_variable_to_text(text: String) -> String:
 # ── Conditional expression evaluation ────────────────────────────────────────
 
 func _evaluate_conditional_expression(expression: String) -> bool:
-	# Extract variable names referenced in the expression, resolve their values
-	# from the state dictionary, then pass them as named inputs to Godot's
-	# Expression evaluator. This avoids the substring-replacement approach that
-	# could corrupt expressions when one variable name is a prefix of another
-	# (e.g. "foo" and "foo_bar").
+	# Strategy:
+	# 1. Find all variable tokens in the expression (simple and nested).
+	# 2. For nested accesses (var["key"]), resolve the value and substitute it
+	#    directly into the expression string (Godot's Expression can't handle
+	#    dictionary bracket syntax).
+	# 3. For simple variables, pass them as named inputs to Expression.execute()
+	#    so we avoid string substitution entirely (prevents prefix-collision bugs).
 
 	var variable_pattern := RegEx.new()
 	variable_pattern.compile("[a-zA-Z_][a-zA-Z_\\d]*(\\[\"[a-zA-Z_\\d]+?\"\\])*")
 	var nested_key_regex := RegEx.new()
 	nested_key_regex.compile("(\"\\S+?\")")
 
-	# Collect unique variable references, preserving insertion order.
-	var seen_keys: Dictionary = {}
-	var input_names: PackedStringArray = []
-	var input_values: Array = []
+	# Build the substituted expression (nested vars replaced with scalar literals)
+	# and collect simple variable names + their resolved values in one pass.
+	var substituted := expression
+	var simple_names: PackedStringArray = []
+	var simple_values: Array = []
+	var seen_tokens: Dictionary = {}
 
-	for variable_match in variable_pattern.search_all(expression):
+	# We must process longer tokens before shorter ones to avoid partial replacement.
+	# Collect all matches first, sort by length descending, then process.
+	var all_matches := variable_pattern.search_all(expression)
+	all_matches.sort_custom(func(a, b): return a.get_string(0).length() > b.get_string(0).length())
+
+	for variable_match in all_matches:
 		var extracted := variable_match.get_string(0)
 
 		# Skip literals and keywords.
@@ -244,56 +262,14 @@ func _evaluate_conditional_expression(expression: String) -> bool:
 				|| extracted.begins_with("\""):
 			continue
 
-		if seen_keys.has(extracted):
+		if seen_tokens.has(extracted):
 			continue
-		seen_keys[extracted] = true
+		seen_tokens[extracted] = true
 
 		var nested_results := nested_key_regex.search_all(extracted)
-		var resolved_value
 
 		if nested_results.size() > 0:
-			var keys := _nested_state_reference(extracted, nested_results)
-			resolved_value = _retrieve_nested_values(keys)
-		else:
-			resolved_value = _stateReference.get(extracted)
-
-		# Treat missing / null variables as false so conditionals degrade gracefully.
-		if resolved_value == null:
-			resolved_value = false
-
-		# Expression.execute() needs a plain identifier as the input name, so we
-		# use the base variable name (before any bracket access) as the key and
-		# substitute the full expression token in the working expression string.
-		var base_name: String = extracted.left(extracted.find("[")) \
-			if "[" in extracted else extracted
-		var safe_name := base_name  # already a valid GDScript identifier
-
-		input_names.push_back(safe_name)
-		input_values.push_back(resolved_value)
-
-	# Build a working expression where nested accesses like var["key"] are
-	# replaced with the safe_name we registered above.
-	var working_expression := expression
-	for idx in input_names.size():
-		# Replace the full token (e.g. stats["strength"]) with the safe name.
-		# We iterate in reverse-length order to avoid partial replacements.
-		pass  # replacement is handled implicitly: input_names map to values
-
-	# For nested accesses the expression string still contains var["key"] syntax
-	# which Godot's Expression cannot evaluate. We need to substitute those with
-	# the resolved scalar values before parsing.
-	var substituted := expression
-	for variable_match in variable_pattern.search_all(expression):
-		var extracted := variable_match.get_string(0)
-		if ["true", "false", "null"].has(extracted) \
-				|| extracted.is_valid_float() \
-				|| extracted.is_valid_int() \
-				|| extracted.begins_with("\""):
-			continue
-
-		var nested_results := nested_key_regex.search_all(extracted)
-		if nested_results.size() > 0:
-			# Nested access — substitute the resolved value directly into the string.
+			# Nested access — resolve and substitute into the expression string.
 			var keys := _nested_state_reference(extracted, nested_results)
 			var resolved = _retrieve_nested_values(keys)
 			if resolved == null:
@@ -304,27 +280,24 @@ func _evaluate_conditional_expression(expression: String) -> bool:
 			else:
 				substitution = str(resolved)
 			substituted = substituted.replace(extracted, substitution)
-
-	# For simple (non-nested) variables, pass them as named inputs so the
-	# Expression evaluator resolves them without string substitution.
-	var simple_names: PackedStringArray = []
-	var simple_values: Array = []
-	for idx in input_names.size():
-		# Only include names that still appear in the (possibly substituted) expression.
-		if substituted.contains(input_names[idx]):
-			simple_names.push_back(input_names[idx])
-			simple_values.push_back(input_values[idx])
+		else:
+			# Simple variable — pass as named input to Expression.
+			var resolved = _stateReference.get(extracted)
+			if resolved == null:
+				resolved = false
+			simple_names.push_back(extracted)
+			simple_values.push_back(resolved)
 
 	var evaluation := Expression.new()
 	var parse_error := evaluation.parse(substituted, simple_names)
 	if parse_error != OK:
-		printerr("Error in [%s]: Failed to parse expression '%s' → '%s': %s" \
+		printerr("Error in [%s]: Failed to parse expression '%s' (substituted: '%s'): %s" \
 			% [_get_current_node_name(), expression, substituted, evaluation.get_error_text()])
 		return false
 
 	var result = evaluation.execute(simple_values)
 	if evaluation.has_execute_failed():
-		printerr("Error in [%s]: Failed to execute expression '%s' → '%s': %s" \
+		printerr("Error in [%s]: Failed to execute expression '%s' (substituted: '%s'): %s" \
 			% [_get_current_node_name(), expression, substituted, evaluation.get_error_text()])
 		return false
 
@@ -334,7 +307,7 @@ func _evaluate_conditional_expression(expression: String) -> bool:
 # ── Nested state helpers ──────────────────────────────────────────────────────
 
 func _retrieve_nested_values(search_keys: Array):
-	# search_keys[0] = full expression string (for error messages)
+	# search_keys[0] = full expression token (for error messages)
 	# search_keys[1] = base variable name
 	# search_keys[2..n] = successive dictionary keys
 	var current = _stateReference
@@ -361,7 +334,7 @@ func _retrieve_nested_values(search_keys: Array):
 
 
 func _nested_state_reference(key: String, nested_key_matches: Array[RegExMatch]) -> Array:
-	# Returns [full_expression, base_variable_name, key1, key2, ...]
+	# Returns [full_expression_token, base_variable_name, key1, key2, ...]
 	var result: Array = [key, key.left(key.find("["))]
 	for m in nested_key_matches:
 		result.append(m.get_string(1).replace("\"", ""))

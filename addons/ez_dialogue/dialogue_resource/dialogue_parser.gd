@@ -116,7 +116,16 @@ func _parse_statement(i: int, raw: String, parseProgress: Array[DialogueCommand]
 	return _collect_plain_text(i, raw, parseProgress, currentLine, inLinePos)
 
 
-# Collect a run of plain text up to the next special character or ${...} injection.
+# Collect a run of plain text up to the next special token or ${...} injection.
+# Only breaks on characters that can actually START a special command:
+#   \  escape
+#   ?> prompt
+#   -> goto  (two chars, so we check for '-' followed by '>')
+#   --- page break (three chars, check '-' followed by '--')
+#   $  variable injection or $if/$elif/$else
+#   {  bracket open
+#   }  bracket close
+#   signal(  custom signal (starts with 's')
 func _collect_plain_text(
 		i: int, raw: String,
 		parseProgress: Array[DialogueCommand],
@@ -134,18 +143,29 @@ func _collect_plain_text(
 			DialogueCommand.CommandType.DISPLAY_TEXT)
 		return i + varMatch.get_string().length()
 
-	# Collect plain characters until we hit a special token or end of string.
-	# Special starters: \ ? - $ s(ignal) { } -
+	# Collect plain characters until we hit a special token.
 	var j := i
 	while j < raw.length():
 		var c := raw[j]
-		# Any of these could start a special command — stop and let the main
-		# loop dispatch them properly on the next iteration.
-		if c == "\\" or c == "?" or c == "-" or c == "$" or c == "{" or c == "}":
-			break
-		# "signal(" starts with 's' — only break on 's' when it actually matches.
-		if c == "s" && _peek_and_match("signal(", j, raw):
-			break
+		match c:
+			"\\":
+				break
+			"?":
+				if _peek_and_match("?>", j, raw):
+					break
+			"-":
+				# Only break for "->" (goto) or "---" (page break).
+				if _peek_and_match("->", j, raw) or _peek_and_match("---", j, raw):
+					break
+			"$":
+				break
+			"{":
+				break
+			"}":
+				break
+			"s":
+				if _peek_and_match("signal(", j, raw):
+					break
 		j += 1
 
 	if j > i:
@@ -207,14 +227,10 @@ func _parse_conditional(
 
 
 # Parse a $elif block.
-# $elif is syntactic sugar: it is stored as a CONDITIONAL command that is only
-# reached when all preceding $if / $elif branches were falsy (the reader skips
-# remaining ELIF/ELSE commands once a branch is taken, just like it does for ELSE).
 func _parse_elif(
 		i: int, raw: String, parseProgress: Array[DialogueCommand],
 		currentLine: int, inLinePos: int, op: String) -> int:
 
-	# $elif is only valid after a CONDITIONAL or another ELIF.
 	var last_child_type := _last_child_type(parseProgress[0].children)
 	if last_child_type != DialogueCommand.CommandType.CONDITIONAL \
 			&& last_child_type != DialogueCommand.CommandType.ELIF:
@@ -274,40 +290,42 @@ func _parse_else(
 		currentLine, inLinePos,
 		DialogueCommand.CommandType.ELSE, [], elseChildren)
 
-	# Skip whitespace after '$else' to find '{' or '->'.
-	var bracketRegex := RegEx.new()
-	bracketRegex.compile("\\s*?{")
-	var bracketMatch := bracketRegex.search(raw, i + 1)
+	# Scan forward from after "$else" to find the opening '{' or '->' on the
+	# same or next non-empty line. We scan character by character to avoid the
+	# greedy/non-greedy regex pitfall of matching tokens far away in the file.
+	var pos := i + 5  # skip past "$else" (5 chars)
+	while pos < raw.length():
+		var c := raw[pos]
+		if c == " " or c == "\t" or c == "\r" or c == "\n":
+			pos += 1
+			continue
+		if c == "{":
+			# Found the opening bracket.
+			var ep := _get_position_from_index(pos, raw)
+			var bracket := DialogueCommand.new(
+				ep["line"], ep["pos"], DialogueCommand.CommandType.BRACKET)
+			elseChildren.push_back(bracket)
+			parseProgress[0].children.push_back(result)
+			parseProgress.push_front(bracket)
+			return pos + 1
+		if _peek_and_match("->", pos, raw):
+			# Found a direct goto.
+			var gotoTerm := RegEx.new()
+			gotoTerm.compile("\\n")
+			var gotoNodeName := _collect_characters(pos + 2, raw, gotoTerm)
+			var ep := _get_position_from_index(pos, raw)
+			elseChildren.push_back(
+				DialogueCommand.new(
+					ep["line"], ep["pos"],
+					DialogueCommand.CommandType.GOTO, [gotoNodeName]))
+			parseProgress[0].children.push_back(result)
+			return pos + 2 + gotoNodeName.length()
+		# Hit a non-whitespace character that isn't '{' or '->' — malformed.
+		break
 
-	var gotoRegex := RegEx.new()
-	gotoRegex.compile("\\s*?->")
-	var gotoMatch := gotoRegex.search(raw, i + 1)
-
-	if bracketMatch && (gotoMatch == null || bracketMatch.get_start() <= gotoMatch.get_start()):
-		var nextPosition := bracketMatch.get_end()
-		var ep := _get_position_from_index(nextPosition, raw)
-		var bracket := DialogueCommand.new(
-			ep["line"], ep["pos"], DialogueCommand.CommandType.BRACKET)
-		elseChildren.push_back(bracket)
-		parseProgress[0].children.push_back(result)
-		parseProgress.push_front(bracket)
-		return nextPosition + 1
-	elif gotoMatch:
-		var nextPosition := gotoMatch.get_end()
-		var gotoTerm := RegEx.new()
-		gotoTerm.compile("\\n")
-		var gotoNodeName := _collect_characters(nextPosition, raw, gotoTerm)
-		var ep := _get_position_from_index(nextPosition, raw)
-		elseChildren.push_back(
-			DialogueCommand.new(
-				ep["line"], ep["pos"],
-				DialogueCommand.CommandType.GOTO, [gotoNodeName]))
-		parseProgress[0].children.push_back(result)
-		return nextPosition + gotoNodeName.length()
-	else:
-		printerr("Error at (line: %d, pos: %d): Expected '{' or '->' after '$else'" \
-			% [currentLine, inLinePos])
-		return i + 1
+	printerr("Error at (line: %d, pos: %d): Expected '{' or '->' after '$else'" \
+		% [currentLine, inLinePos])
+	return i + 1
 
 
 # Parse the label and child commands of a PROMPT (?>) command.
@@ -353,7 +371,6 @@ func _parse_prompt_command(i: int, raw: String, promptCommand: DialogueCommand) 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
-# Collect characters from [starting] until [terminating] regex matches.
 func _collect_characters(starting: int, raw: String, terminating: RegEx) -> String:
 	var m := terminating.search(raw, starting)
 	if m:
@@ -367,7 +384,6 @@ func _is_previous_parse_type(
 		return false
 	return parseProgress[-1].type == type
 
-# Returns the CommandType of the last child in [children], or UNKNOWN if empty.
 func _last_child_type(children: Array[DialogueCommand]) -> DialogueCommand.CommandType:
 	if children.is_empty():
 		return DialogueCommand.CommandType.UNKNOWN
@@ -377,11 +393,12 @@ func _add_letters_progress(
 		letter: String, parseProgress: Array,
 		currentLine: int, currentPos: int,
 		type: DialogueCommand.CommandType) -> void:
-	if _is_previous_parse_type(type, parseProgress):
-		# Merge into the previous run of the same type.
-		parseProgress[-1].values[0] += letter
-	elif letter == " " || letter == "\t" || letter == "\n":
+	# Discard chunks that are entirely whitespace (blank lines, indentation gaps
+	# between commands). These should not appear in output text.
+	if letter.strip_edges(true, true).is_empty():
 		return
+	if _is_previous_parse_type(type, parseProgress):
+		parseProgress[-1].values[0] += letter
 	else:
 		parseProgress.push_back(
 			DialogueCommand.new(currentLine, currentPos, type, [letter]))
