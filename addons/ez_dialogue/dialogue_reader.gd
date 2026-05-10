@@ -2,51 +2,49 @@
 class_name EzDialogueReader extends Node
 
 ## (DEPRECATED — use DialogueResponse.eod_reached from the dialogue_generated signal instead.)
-## This signal still fires for backward compatibility but will be removed in a future version.
 ## @deprecated
 signal end_of_dialogue_reached()
 
 ## Emitted when the current "page" of dialogue is processed.
-## [param response] contains the display [param text] and any player [param choices].
 signal dialogue_generated(response: DialogueResponse)
 
 ## Emitted when the dialogue executes a signal(...) command.
-## [param value] is the raw string inside the parentheses.
-## e.g. signal(play_sound,door_creak) → value = "play_sound,door_creak"
 signal custom_signal_received(value)
 
-## Maximum number of commands processed per _process() frame.
-## Prevents a very long chain of GOTOs from spiking a single frame.
-## Remaining work carries over to the next frame automatically.
-## The in-progress response is preserved across frames.
 const MAX_COMMANDS_PER_FRAME := 500
 
 var is_running := false
 var history_stack_size := 100
+var dialogue_visit_history: Array[String]
 
 var _resource_cache: Dictionary = {}
 var _processing_dialogue: DialogueResource
 var _executing_command_stack: Array[DialogueCommand]
-var dialogue_visit_history: Array[String]
-
-# Pending choice actions, indexed by choice order.
 var _pending_choice_actions: Array
 var _stateReference: Dictionary
-
-# Preserved across frames when MAX_COMMANDS_PER_FRAME is hit mid-run.
 var _current_response: DialogueResponse
 
+# Precompiled regex — avoids recompiling on every text/expression evaluation.
+var _placeholder_regex := _compile("\\${(\\S+?)}")
+var _nested_key_regex := _compile("(\"\\S+?\")")
+var _variable_pattern := _compile("[a-zA-Z_][a-zA-Z_\\d]*(\\[\"[a-zA-Z_\\d]+?\"\\])*")
+
+static func _compile(pattern: String) -> RegEx:
+	var r := RegEx.new()
+	r.compile(pattern)
+	return r
+
+
+# ── Core loop ─────────────────────────────────────────────────────────────────
 
 func _process(_delta: float) -> void:
 	if not is_running:
 		return
 
-	# Reuse the in-progress response if we carried over from a previous frame.
 	if _current_response == null:
 		_current_response = DialogueResponse.new()
 
-	var commands_this_frame := 0
-
+	var count := 0
 	while is_running:
 		if _executing_command_stack.is_empty():
 			is_running = false
@@ -56,323 +54,246 @@ func _process(_delta: float) -> void:
 			break
 
 		_process_command(_executing_command_stack.pop_front(), _current_response)
+		count += 1
+		if count >= MAX_COMMANDS_PER_FRAME:
+			return  # carry over to next frame
 
-		commands_this_frame += 1
-		if commands_this_frame >= MAX_COMMANDS_PER_FRAME:
-			# Carry over to next frame — preserve _current_response and return
-			# without emitting. is_running stays true so _process resumes.
-			return
-
-	# Dialogue paused (page break / prompt / eod) — emit and clear.
 	dialogue_generated.emit(_current_response)
 	_current_response = null
 
 
-## Load and start processing the dialogue from [param starting_node_name].
-##
-## [param dialogue] — a JSON resource (legacy .json format) OR a plain text
-## resource/string path to an .ezd file. Both are supported.
-## [param state]    — Dictionary of game-state variables accessible to the dialogue.
-## [param starting_node_name] — Name of the node to begin from (default: "start").
-func start_dialogue(
-		dialogue,
-		state: Dictionary,
-		starting_node_name: String = "start") -> void:
+# ── Public API ────────────────────────────────────────────────────────────────
 
+## Start processing dialogue. Accepts JSON (legacy), String path to .ezd, or Resource.
+func start_dialogue(dialogue, state: Dictionary, starting_node_name: String = "start") -> void:
 	_load_dialogue(dialogue)
-	var starting_node := _processing_dialogue.get_node_by_name(starting_node_name)
-	_executing_command_stack = starting_node.get_parse()
+	var node := _processing_dialogue.get_node_by_name(starting_node_name)
+	_executing_command_stack = node.get_parse()
 	_pending_choice_actions = []
 	_current_response = null
-	dialogue_visit_history = [starting_node.name]
+	dialogue_visit_history = [node.name]
 	_stateReference = state
 	is_running = true
 
-
-func _load_dialogue(dialogue) -> void:
-	# Determine the cache key and load strategy based on resource type.
-	var cache_key: String
-
-	if dialogue is JSON:
-		# Legacy JSON format
-		cache_key = dialogue.resource_path
-		if not _resource_cache.has(cache_key):
-			var res := DialogueResource.new()
-			res.loadFromJson(dialogue.data)
-			_resource_cache[cache_key] = res
-	elif dialogue is String:
-		# String path to an .ezd file
-		cache_key = dialogue
-		if not _resource_cache.has(cache_key):
-			var parser := EzdFileParser.new()
-			var res := parser.parse_file(dialogue)
-			if res == null:
-				printerr("EzDialogueReader: Failed to load .ezd file: " + dialogue)
-				return
-			_resource_cache[cache_key] = res
-	elif dialogue is Resource and dialogue.resource_path.ends_with(".ezd"):
-		# Loaded as a generic text Resource
-		cache_key = dialogue.resource_path
-		if not _resource_cache.has(cache_key):
-			var parser := EzdFileParser.new()
-			var res := parser.parse_file(dialogue.resource_path)
-			if res == null:
-				printerr("EzDialogueReader: Failed to load .ezd file: " + dialogue.resource_path)
-				return
-			_resource_cache[cache_key] = res
-	else:
-		printerr("EzDialogueReader: Unsupported dialogue resource type: " + str(typeof(dialogue)))
-		return
-
-	_processing_dialogue = _resource_cache[cache_key]
-
-
-## Advance to the next page / choice branch.
-## Call after receiving [signal dialogue_generated].
-##
-## [param choice_index] — Index of the selected choice from the previous response.
-## Ignored if the previous response had no choices.
+## Advance to the next page or select a choice.
 func next(choice_index: int = 0) -> void:
 	if is_running:
 		return
-
-	if choice_index >= 0 && choice_index < _pending_choice_actions.size():
+	if choice_index >= 0 and choice_index < _pending_choice_actions.size():
 		var commands := _pending_choice_actions[choice_index] as Array[DialogueCommand]
 		commands.append_array(_executing_command_stack)
 		_executing_command_stack = commands
 		_pending_choice_actions = []
-	# else: resume the existing stack as-is
-
 	_current_response = null
 	is_running = true
 
 
+# ── Command processing ────────────────────────────────────────────────────────
+
 func _process_command(command: DialogueCommand, response: DialogueResponse) -> void:
 	match command.type:
-		DialogueCommand.CommandType.ROOT:
-			var front := command.children.duplicate(true)
-			front.append_array(_executing_command_stack)
-			_executing_command_stack = front
+		DialogueCommand.CommandType.ROOT, DialogueCommand.CommandType.BRACKET:
+			_prepend_children(command.children)
 
 		DialogueCommand.CommandType.SIGNAL:
 			custom_signal_received.emit(command.values[0])
 
-		DialogueCommand.CommandType.BRACKET:
-			var front := command.children.duplicate(true)
-			front.append_array(_executing_command_stack)
-			_executing_command_stack = front
-
 		DialogueCommand.CommandType.DISPLAY_TEXT:
-			var display_text: String = _inject_variable_to_text((command.values[0] as String).strip_edges(true, true))
-			response.append_text(display_text)
+			var text: String = (command.values[0] as String).strip_edges(true, true)
+			response.append_text(_inject_variables(text))
 
 		DialogueCommand.CommandType.PAGE_BREAK:
 			is_running = false
 
 		DialogueCommand.CommandType.PROMPT:
-			var prompt: String = _inject_variable_to_text(command.values[0])
+			var prompt: String = _inject_variables(command.values[0]).strip_edges()
 			var actions: Array[DialogueCommand] = []
 			actions.append_array(command.children)
-			response.append_choice(prompt.strip_edges())
+			response.append_choice(prompt)
 			_pending_choice_actions.push_back(actions)
 
 		DialogueCommand.CommandType.GOTO:
-			var destination_node := _processing_dialogue.get_node_by_name(command.values[0])
-			_executing_command_stack = destination_node.get_parse()
-			_push_visit_history(destination_node.name)
+			var dest := _processing_dialogue.get_node_by_name(command.values[0])
+			_executing_command_stack = dest.get_parse()
+			_push_history(dest.name)
 
-		DialogueCommand.CommandType.CONDITIONAL:
-			var result := _evaluate_conditional_expression(command.values[0])
-			if result:
-				# Branch taken — drop any immediately following $elif / $else siblings.
+		DialogueCommand.CommandType.CONDITIONAL, DialogueCommand.CommandType.ELIF:
+			if _evaluate_expression(command.values[0]):
 				_drop_elif_else_chain()
-				_queue_executing_commands(command.children)
-			# If false, fall through; the next sibling ($elif or $else) will be processed.
-
-		DialogueCommand.CommandType.ELIF:
-			# Only reached when all preceding $if / $elif branches were false.
-			var result := _evaluate_conditional_expression(command.values[0])
-			if result:
-				_drop_elif_else_chain()
-				_queue_executing_commands(command.children)
+				_prepend_children(command.children)
 
 		DialogueCommand.CommandType.ELSE:
-			# Only reached when all preceding $if / $elif branches were false.
-			_queue_executing_commands(command.children)
+			_prepend_children(command.children)
 
 
-# Drop any $elif / $else commands at the front of the execution stack.
-# Called after a $if or $elif branch is taken so the remaining branches are skipped.
+# ── Stack helpers ─────────────────────────────────────────────────────────────
+
+func _prepend_children(children: Array[DialogueCommand]) -> void:
+	var copy := children.duplicate(true)
+	copy.append_array(_executing_command_stack)
+	_executing_command_stack = copy
+
 func _drop_elif_else_chain() -> void:
 	while not _executing_command_stack.is_empty():
-		var front_type := _executing_command_stack[0].type
-		if front_type == DialogueCommand.CommandType.ELIF \
-				|| front_type == DialogueCommand.CommandType.ELSE:
+		var t := _executing_command_stack[0].type
+		if t == DialogueCommand.CommandType.ELIF or t == DialogueCommand.CommandType.ELSE:
 			_executing_command_stack.pop_front()
 		else:
 			break
 
-
-func _queue_executing_commands(commands: Array[DialogueCommand]) -> void:
-	var copy := commands.duplicate(true)
-	copy.append_array(_executing_command_stack)
-	_executing_command_stack = copy
-
-
-func _push_visit_history(node_name: String) -> void:
+func _push_history(node_name: String) -> void:
 	dialogue_visit_history.push_front(node_name)
 	if dialogue_visit_history.size() > history_stack_size:
 		dialogue_visit_history.resize(history_stack_size)
 
 
+# ── Dialogue loading ──────────────────────────────────────────────────────────
+
+func _load_dialogue(dialogue) -> void:
+	var cache_key: String
+	var loader: Callable
+
+	if dialogue is JSON:
+		cache_key = dialogue.resource_path
+		loader = func():
+			var res := DialogueResource.new()
+			res.loadFromJson(dialogue.data)
+			return res
+	elif dialogue is String:
+		cache_key = dialogue
+		loader = func(): return EzdFileParser.new().parse_file(dialogue)
+	elif dialogue is Resource and dialogue.resource_path.ends_with(".ezd"):
+		cache_key = dialogue.resource_path
+		loader = func(): return EzdFileParser.new().parse_file(dialogue.resource_path)
+	else:
+		printerr("EzDialogueReader: Unsupported dialogue type: " + str(typeof(dialogue)))
+		return
+
+	if not _resource_cache.has(cache_key):
+		var res = loader.call()
+		if res == null:
+			printerr("EzDialogueReader: Failed to load: " + cache_key)
+			return
+		_resource_cache[cache_key] = res
+
+	_processing_dialogue = _resource_cache[cache_key]
+
+
 # ── Variable injection ────────────────────────────────────────────────────────
 
-func _inject_variable_to_text(text: String) -> String:
-	var placeholder_regex := RegEx.new()
-	placeholder_regex.compile("\\${(\\S+?)}")
-	var nested_key_regex := RegEx.new()
-	nested_key_regex.compile("(\"\\S+?\")")
-
-	var final_text := text
-	for result in placeholder_regex.search_all(final_text):
-		var inner := result.get_string(1)
-		var nested_results := nested_key_regex.search_all(inner)
+func _inject_variables(text: String) -> String:
+	var result := text
+	for m in _placeholder_regex.search_all(result):
+		var inner := m.get_string(1)
+		var nested := _nested_key_regex.search_all(inner)
 		var value: String
 		var placeholder: String
 
-		if nested_results.size() > 0:
-			var keys := _nested_state_reference(inner, nested_results)
-			var raw_value = _retrieve_nested_values(keys)
-			value = str(raw_value) if raw_value != null else ""
+		if nested.size() > 0:
+			var keys := _build_key_path(inner, nested)
+			var raw_val = _resolve_nested(keys)
+			value = str(raw_val) if raw_val != null else ""
 			placeholder = "${%s}" % keys[0]
 		else:
-			var raw_value = _stateReference.get(inner)
-			value = str(raw_value) if raw_value != null else ""
+			var raw_val = _stateReference.get(inner)
+			value = str(raw_val) if raw_val != null else ""
 			placeholder = "${%s}" % inner
 
-		final_text = final_text.replace(placeholder, value)
-
-	return final_text
+		result = result.replace(placeholder, value)
+	return result
 
 
 # ── Conditional expression evaluation ────────────────────────────────────────
 
-func _evaluate_conditional_expression(expression: String) -> bool:
-	# Strategy:
-	# 1. Find all variable tokens in the expression (simple and nested).
-	# 2. For nested accesses (var["key"]), resolve the value and substitute it
-	#    directly into the expression string (Godot's Expression can't handle
-	#    dictionary bracket syntax).
-	# 3. For simple variables, pass them as named inputs to Expression.execute()
-	#    so we avoid string substitution entirely (prevents prefix-collision bugs).
-
-	var variable_pattern := RegEx.new()
-	variable_pattern.compile("[a-zA-Z_][a-zA-Z_\\d]*(\\[\"[a-zA-Z_\\d]+?\"\\])*")
-	var nested_key_regex := RegEx.new()
-	nested_key_regex.compile("(\"\\S+?\")")
-
-	# Build the substituted expression (nested vars replaced with scalar literals)
-	# and collect simple variable names + their resolved values in one pass.
+func _evaluate_expression(expression: String) -> bool:
 	var substituted := expression
 	var simple_names: PackedStringArray = []
 	var simple_values: Array = []
-	var seen_tokens: Dictionary = {}
+	var seen: Dictionary = {}
 
-	# We must process longer tokens before shorter ones to avoid partial replacement.
-	# Collect all matches first, sort by length descending, then process.
-	var all_matches := variable_pattern.search_all(expression)
-	all_matches.sort_custom(func(a, b): return a.get_string(0).length() > b.get_string(0).length())
+	# Sort matches longest-first to avoid partial replacement.
+	var matches := _variable_pattern.search_all(expression)
+	matches.sort_custom(func(a, b): return a.get_string(0).length() > b.get_string(0).length())
 
-	for variable_match in all_matches:
-		var extracted := variable_match.get_string(0)
-
-		# Skip literals and keywords.
-		if ["true", "false", "null"].has(extracted) \
-				|| extracted.is_valid_float() \
-				|| extracted.is_valid_int() \
-				|| extracted.begins_with("\""):
+	for vm in matches:
+		var token := vm.get_string(0)
+		if _is_literal(token) or seen.has(token):
 			continue
+		seen[token] = true
 
-		if seen_tokens.has(extracted):
-			continue
-		seen_tokens[extracted] = true
-
-		var nested_results := nested_key_regex.search_all(extracted)
-
-		if nested_results.size() > 0:
-			# Nested access — resolve and substitute into the expression string.
-			var keys := _nested_state_reference(extracted, nested_results)
-			var resolved = _retrieve_nested_values(keys)
-			if resolved == null:
-				resolved = false
-			var substitution: String
-			if resolved is String:
-				substitution = "\"" + resolved + "\""
-			else:
-				substitution = str(resolved)
-			substituted = substituted.replace(extracted, substitution)
+		var nested := _nested_key_regex.search_all(token)
+		if nested.size() > 0:
+			# Nested dict access — substitute resolved value into expression string.
+			var keys := _build_key_path(token, nested)
+			var resolved = _resolve_nested(keys)
+			substituted = substituted.replace(token, _to_expr_literal(resolved))
 		else:
 			# Simple variable — pass as named input to Expression.
-			var resolved = _stateReference.get(extracted)
-			if resolved == null:
-				resolved = false
-			simple_names.push_back(extracted)
-			simple_values.push_back(resolved)
+			var resolved = _stateReference.get(token)
+			simple_names.push_back(token)
+			simple_values.push_back(resolved if resolved != null else false)
 
-	var evaluation := Expression.new()
-	var parse_error := evaluation.parse(substituted, simple_names)
-	if parse_error != OK:
-		printerr("Error in [%s]: Failed to parse expression '%s' (substituted: '%s'): %s" \
-			% [_get_current_node_name(), expression, substituted, evaluation.get_error_text()])
+	var eval := Expression.new()
+	if eval.parse(substituted, simple_names) != OK:
+		printerr("Error in [%s]: Parse failed '%s': %s" \
+			% [_current_node_name(), substituted, eval.get_error_text()])
 		return false
 
-	var result = evaluation.execute(simple_values)
-	if evaluation.has_execute_failed():
-		printerr("Error in [%s]: Failed to execute expression '%s' (substituted: '%s'): %s" \
-			% [_get_current_node_name(), expression, substituted, evaluation.get_error_text()])
+	var result = eval.execute(simple_values)
+	if eval.has_execute_failed():
+		printerr("Error in [%s]: Execute failed '%s': %s" \
+			% [_current_node_name(), substituted, eval.get_error_text()])
 		return false
 
 	return bool(result)
 
 
-# ── Nested state helpers ──────────────────────────────────────────────────────
+# ── State resolution helpers ──────────────────────────────────────────────────
 
-func _retrieve_nested_values(search_keys: Array):
-	# search_keys[0] = full expression token (for error messages)
-	# search_keys[1] = base variable name
-	# search_keys[2..n] = successive dictionary keys
+func _resolve_nested(keys: Array):
+	# keys = [full_token, base_name, key1, key2, ...]
 	var current = _stateReference
-	for key_idx in range(1, search_keys.size()):
-		var key = search_keys[key_idx]
+	for idx in range(1, keys.size()):
+		var key = keys[idx]
 		if current is Dictionary:
 			if current.has(key):
 				current = current[key]
 			else:
 				printerr("Error in [%s]: Key '%s' not found (path: '%s')" \
-					% [_get_current_node_name(), key, search_keys[0]])
+					% [_current_node_name(), key, keys[0]])
 				return null
 		elif current is Resource:
 			var prop = (current as Resource).get(key)
 			if prop != null:
 				current = prop
 			else:
-				printerr("Error in [%s]: Property '%s' not found on Resource (path: '%s')" \
-					% [_get_current_node_name(), key, search_keys[0]])
+				printerr("Error in [%s]: Property '%s' not found (path: '%s')" \
+					% [_current_node_name(), key, keys[0]])
 				return null
 		else:
 			break
 	return current
 
-
-func _nested_state_reference(key: String, nested_key_matches: Array[RegExMatch]) -> Array:
-	# Returns [full_expression_token, base_variable_name, key1, key2, ...]
-	var result: Array = [key, key.left(key.find("["))]
-	for m in nested_key_matches:
+func _build_key_path(token: String, nested_matches: Array[RegExMatch]) -> Array:
+	var result: Array = [token, token.left(token.find("["))]
+	for m in nested_matches:
 		result.append(m.get_string(1).replace("\"", ""))
 	return result
 
+func _is_literal(token: String) -> bool:
+	return ["true", "false", "null"].has(token) \
+		or token.is_valid_float() \
+		or token.is_valid_int() \
+		or token.begins_with("\"")
 
-func _get_current_node_name() -> String:
+func _to_expr_literal(value) -> String:
+	if value == null:
+		return "false"
+	if value is String:
+		return "\"" + value + "\""
+	return str(value)
+
+func _current_node_name() -> String:
 	if dialogue_visit_history.is_empty():
 		return "<unknown>"
 	return dialogue_visit_history[0]
