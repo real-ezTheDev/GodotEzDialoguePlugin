@@ -8,6 +8,10 @@
         {
             "name": "Syntax Highlight Tests",
             "script": "res://test/RunSyntaxHighlightTests.gd"
+        },
+        {
+            "name": "EZD Format Tests",
+            "script": "res://test/RunEzdFormatTests.gd"
         }
     ]
 }

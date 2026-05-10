@@ -1,0 +1,28 @@
+{
+    "name": "ezdialogue-syntax",
+    "displayName": "EzDialogue Syntax",
+    "description": "Syntax highlighting for EzDialogue (.ezd) files",
+    "version": "0.1.0",
+    "publisher": "DeveloperEzra",
+    "engines": {
+        "vscode": "^1.70.0"
+    },
+    "categories": ["Programming Languages"],
+    "contributes": {
+        "languages": [
+            {
+                "id": "ezdialogue",
+                "aliases": ["EzDialogue", "ezd"],
+                "extensions": [".ezd"],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "ezdialogue",
+                "scopeName": "source.ezd",
+                "path": "./syntaxes/ezd.tmLanguage.json"
+            }
+        ]
+    }
+}

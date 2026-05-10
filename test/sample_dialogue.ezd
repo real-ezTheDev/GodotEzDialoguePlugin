@@ -1,0 +1,19 @@
+[node: start]
+Hello traveller.
+?> Continue -> next
+?> Leave {}
+
+[node: next, position: 300, 200]
+Welcome to the village.
+signal(play_music,village_theme)
+---
+$if has_quest {
+    I see you have a quest.
+    -> quest_node
+}
+$else {
+    Nothing to do here.
+}
+
+[node: quest_node, position: 500, 200]
+The quest is complete.

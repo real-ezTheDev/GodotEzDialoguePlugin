@@ -1,0 +1,96 @@
+{
+    "name": "EzDialogue",
+    "scopeName": "source.ezd",
+    "fileTypes": ["ezd"],
+    "patterns": [
+        { "include": "#node-header" },
+        { "include": "#page-break" },
+        { "include": "#conditional" },
+        { "include": "#elif" },
+        { "include": "#else" },
+        { "include": "#signal" },
+        { "include": "#goto" },
+        { "include": "#prompt" },
+        { "include": "#variable-injection" },
+        { "include": "#escape" },
+        { "include": "#brackets" }
+    ],
+    "repository": {
+        "node-header": {
+            "match": "^\\[node:\\s*([^,\\]]+)(?:,\\s*position:\\s*([\\d.]+)\\s*,\\s*([\\d.]+))?\\s*\\]",
+            "name": "meta.node-header.ezd",
+            "captures": {
+                "0": { "name": "keyword.control.node.ezd" },
+                "1": { "name": "entity.name.function.node-name.ezd" },
+                "2": { "name": "constant.numeric.position.ezd" },
+                "3": { "name": "constant.numeric.position.ezd" }
+            }
+        },
+        "page-break": {
+            "match": "^---$",
+            "name": "keyword.control.page-break.ezd"
+        },
+        "conditional": {
+            "match": "(\\$if)\\s+(.+?)\\s*\\{",
+            "captures": {
+                "1": { "name": "keyword.control.conditional.ezd" },
+                "2": { "name": "meta.expression.ezd" }
+            }
+        },
+        "elif": {
+            "match": "(\\$elif)\\s+(.+?)\\s*\\{",
+            "captures": {
+                "1": { "name": "keyword.control.elif.ezd" },
+                "2": { "name": "meta.expression.ezd" }
+            }
+        },
+        "else": {
+            "match": "(\\$else)\\s*\\{",
+            "captures": {
+                "1": { "name": "keyword.control.else.ezd" }
+            }
+        },
+        "signal": {
+            "match": "(signal)(\\()([^)]*)(\\))",
+            "captures": {
+                "1": { "name": "keyword.other.signal.ezd" },
+                "2": { "name": "punctuation.paren.open.ezd" },
+                "3": { "name": "string.unquoted.signal-params.ezd" },
+                "4": { "name": "punctuation.paren.close.ezd" }
+            }
+        },
+        "goto": {
+            "match": "(->)\\s*(.+)",
+            "captures": {
+                "1": { "name": "keyword.operator.goto.ezd" },
+                "2": { "name": "constant.other.node-reference.ezd" }
+            }
+        },
+        "prompt": {
+            "match": "(\\?>)\\s*(.+?)(?:\\s*(->)\\s*(.+)|\\s*(\\{))",
+            "captures": {
+                "1": { "name": "keyword.operator.prompt.ezd" },
+                "2": { "name": "string.unquoted.choice-text.ezd" },
+                "3": { "name": "keyword.operator.goto.ezd" },
+                "4": { "name": "constant.other.node-reference.ezd" },
+                "5": { "name": "punctuation.bracket.open.ezd" }
+            }
+        },
+        "variable-injection": {
+            "match": "(\\$\\{)(\\S+?)(\\})",
+            "captures": {
+                "1": { "name": "punctuation.definition.variable.begin.ezd" },
+                "2": { "name": "variable.other.injection.ezd" },
+                "3": { "name": "punctuation.definition.variable.end.ezd" }
+            }
+        },
+        "escape": {
+            "match": "\\\\.",
+            "name": "constant.character.escape.ezd"
+        },
+        "brackets": {
+            "match": "[{}]",
+            "name": "punctuation.bracket.ezd"
+        }
+    }
+}

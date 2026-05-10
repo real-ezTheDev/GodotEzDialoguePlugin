@@ -52,7 +52,10 @@ func save(force_save: bool = false):
 		var save_file = FileAccess.open(workingPath, FileAccess.WRITE)
 		var resource: DialogueResource = DialogueResource.new()
 		resource.dialogue_nodes = dialogueNodes
-		save_file.store_string(resource.serialize())
+		if workingPath.ends_with(".ezd"):
+			save_file.store_string(EzdFileParser.serialize(resource))
+		else:
+			save_file.store_string(resource.serialize())
 		_mark_saved()
 
 func reset():
@@ -342,15 +345,25 @@ func _on_draw_container_end_node_move():
 func _on_save_file_dialog_file_selected(path):
 	var resource: DialogueResource = DialogueResource.new()
 	resource.dialogue_nodes = dialogueNodes
+
 	var save_file = FileAccess.open(path, FileAccess.WRITE)
-	save_file.store_string(resource.serialize())
+	if path.ends_with(".ezd"):
+		save_file.store_string(EzdFileParser.serialize(resource))
+	else:
+		save_file.store_string(resource.serialize())
 	_mark_saved()
 	working_path_changed.emit(path)
 
 func _on_open_file_dialog_file_selected(path):
-	var file = FileAccess.open(path, FileAccess.READ)
-	var resource: DialogueResource = DialogueResource.new()
-	resource.loadFromText(file.get_as_text())
+	var resource: DialogueResource
+
+	if path.ends_with(".ezd"):
+		var parser := EzdFileParser.new()
+		resource = parser.parse_file(path)
+	else:
+		var file = FileAccess.open(path, FileAccess.READ)
+		resource = DialogueResource.new()
+		resource.loadFromText(file.get_as_text())
 
 	_clear_graph()
 
