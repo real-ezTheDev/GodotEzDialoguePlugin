@@ -16,6 +16,10 @@ export_presets.cfg
 data_*/
 mono_crash.*.json
 
+# .NET build artifacts (in case of non-default output paths)
+bin/
+obj/
+
 # Editor/IDE settings (machine-specific)
 .vscode/
 .kiro/

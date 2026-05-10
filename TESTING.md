@@ -8,6 +8,8 @@ EzDialogue includes a built-in testing framework so you can verify your dialogue
 2. Create a test script
 3. Run it headlessly from the terminal
 
+### GDScript
+
 ```gdscript
 # test/MyDialogueTest.gd
 extends SceneTree
@@ -44,6 +46,59 @@ Run it:
 godot --headless --path . -s test/MyDialogueTest.gd
 ```
 
+### C#
+
+For C# projects, use `DialogueTestSharp` which mirrors the GDScript `DialogueTest` API:
+
+```csharp
+// test/MyCSharpDialogueTest.cs
+using Godot;
+using System.Collections.Generic;
+using EzDialogue;
+
+public partial class MyCSharpDialogueTest : Node
+{
+    private EzDialogueSharp _dialogue;
+    private DialogueTestSharp _tester;
+
+    public override void _Ready()
+    {
+        _dialogue = new EzDialogueSharp();
+        _dialogue.Name = "EzDialogueSharp";
+        AddChild(_dialogue);
+
+        _tester = new DialogueTestSharp(_dialogue);
+        AddChild(_tester);
+
+        CallDeferred(nameof(RunTests));
+    }
+
+    private async void RunTests()
+    {
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        var dialogue = GD.Load<Json>("res://dialogue/my_dialogue.json");
+
+        // Test the happy path
+        _tester.SetStates(new() { ["has_key"] = true });
+        await _tester.StartTest(dialogue, "start");
+        _tester.AssertResponse("The door opens.", new(), true);
+
+        // Test the sad path
+        _tester.SetStates(new() { ["has_key"] = false });
+        await _tester.StartTest(dialogue, "start");
+        _tester.AssertResponse("It's locked.", new(), true);
+
+        GD.Print("All tests passed!");
+        GetTree().Quit();
+    }
+}
+```
+
+Create a scene (`test/MyCSharpTest.tscn`) with this script attached, then run:
+```
+godot --headless --path . res://test/MyCSharpTest.tscn
+```
+
 ## Core Concepts
 
 ### DialogueTest
@@ -75,14 +130,16 @@ _tester.assert_response("Welcome! What can I get you?", ["Buy sword", "Leave"])
 
 ## API Reference
 
-### Setup
+### GDScript — DialogueTest
+
+#### Setup
 
 | Method | Description |
 |--------|-------------|
 | `DialogueTest.new(reader: EzDialogueReader)` | Create a test harness wrapping a dialogue reader |
 | `set_states(state: Dictionary)` | Set the state variables for the next test run |
 
-### Driving the Dialogue
+#### Driving the Dialogue
 
 | Method | Description |
 |--------|-------------|
@@ -90,7 +147,7 @@ _tester.assert_response("Welcome! What can I get you?", ["Buy sword", "Leave"])
 | `await resume_without_choice()` | Continue after a page break (no choice needed) |
 | `await resume_with_choice(choice_index: int)` | Select a choice by index and continue |
 
-### Assertions
+#### Assertions
 
 | Method | Description |
 |--------|-------------|
@@ -99,6 +156,33 @@ _tester.assert_response("Welcome! What can I get you?", ["Buy sword", "Leave"])
 | `assert_dialogue_node_not_visited(node_name)` | Assert a node was NOT visited |
 | `assert_custom_signal(param_string)` | Assert a `signal(...)` command fired with the given parameter |
 | `assert_custom_signal_not_received()` | Assert no custom signals were emitted |
+
+### C# — DialogueTestSharp
+
+#### Setup
+
+| Method | Description |
+|--------|-------------|
+| `new DialogueTestSharp(dialogue)` | Create a test harness wrapping an `EzDialogueSharp` node |
+| `SetStates(Dictionary state)` | Set the state variables for the next test run |
+
+#### Driving the Dialogue
+
+| Method | Description |
+|--------|-------------|
+| `await StartTest(Resource dialogue, string startNode)` | Start dialogue from a named node and wait for the first response |
+| `await StartTestFromEzd(string path, string startNode)` | Start from an .ezd file path |
+| `await ResumeWithoutChoice()` | Continue after a page break |
+| `await ResumeWithChoice(int choiceIndex)` | Select a choice by index and continue |
+
+#### Assertions
+
+| Method | Description |
+|--------|-------------|
+| `AssertResponse(string text, List<string> choices, bool eodReached)` | Assert text, choices, and end-of-dialogue |
+| `AssertCustomSignal(string param)` | Assert a signal was received with the given parameter |
+| `AssertCustomSignalNotReceived()` | Assert no custom signals were emitted |
+| `LastResponse` | Property to access the raw `DialogueResponseSharp` for manual checks |
 
 ### assert_response Parameters
 
@@ -116,6 +200,7 @@ _tester.assert_response(
 
 ## Testing Choices and Branching
 
+**GDScript:**
 ```gdscript
 # Start at a node with choices
 await _tester.start_test(dialogue, "crossroads")
@@ -131,8 +216,27 @@ await _tester.resume_with_choice(1)
 _tester.assert_response("You went right.", [], true)
 ```
 
+**C#:**
+```csharp
+// Start at a node with choices
+_tester.SetStates(new());
+await _tester.StartTest(dialogue, "crossroads");
+_tester.AssertResponse("Which path?",
+    new List<string> { "Go left", "Go right" }, false);
+
+// Pick choice 0
+await _tester.ResumeWithChoice(0);
+_tester.AssertResponse("You went left.", new(), true);
+
+// Re-run and pick the other choice
+await _tester.StartTest(dialogue, "crossroads");
+await _tester.ResumeWithChoice(1);
+_tester.AssertResponse("You went right.", new(), true);
+```
+
 ## Testing Conditionals
 
+**GDScript:**
 ```gdscript
 # Truthy path
 _tester.set_states({"is_friend": true})
@@ -150,22 +254,55 @@ await _tester.start_test(dialogue, "guard")
 _tester.assert_response("Halt! Who goes there?", [], true)
 ```
 
+**C#:**
+```csharp
+// Truthy path
+_tester.SetStates(new() { ["is_friend"] = true });
+await _tester.StartTest(dialogue, "guard");
+_tester.AssertResponse("Welcome, friend!", new(), true);
+
+// Falsy path
+_tester.SetStates(new() { ["is_friend"] = false });
+await _tester.StartTest(dialogue, "guard");
+_tester.AssertResponse("Halt! Who goes there?", new(), true);
+```
+
 ## Testing Signals
 
+**GDScript:**
 ```gdscript
 await _tester.start_test(dialogue, "treasure_chest")
 _tester.assert_custom_signal("give_item,gold_key")
 _tester.assert_custom_signal("play_sfx,chest_open")
 ```
 
+**C#:**
+```csharp
+_tester.SetStates(new());
+await _tester.StartTest(dialogue, "treasure_chest");
+_tester.AssertCustomSignal("give_item,gold_key");
+_tester.AssertCustomSignal("play_sfx,chest_open");
+```
+
 ## Testing Page Breaks
 
+**GDScript:**
 ```gdscript
 await _tester.start_test(dialogue, "long_speech")
 _tester.assert_response("First page of the speech.", [], false)  # false = not end yet
 
 await _tester.resume_without_choice()
 _tester.assert_response("Second page.", [], true)  # true = end of dialogue
+```
+
+**C#:**
+```csharp
+_tester.SetStates(new());
+await _tester.StartTest(dialogue, "long_speech");
+_tester.AssertResponse("First page of the speech.", new(), false);
+
+await _tester.ResumeWithoutChoice();
+_tester.AssertResponse("Second page.", new(), true);
 ```
 
 ## Testing Node Visits (Flow Verification)
@@ -179,10 +316,11 @@ _tester.assert_dialogue_node_visited("reward_node")
 _tester.assert_dialogue_node_not_visited("rejection_node")
 ```
 
+> **Note:** Node visit tracking is only available via the GDScript `DialogueTest` harness. For C# tests, verify flow by checking the response text content instead.
+
 ## Testing .ezd Files
 
-You can pass a file path string to `start_dialogue` for `.ezd` files:
-
+**GDScript:**
 ```gdscript
 func _run() -> void:
     _reader.start_dialogue("res://dialogue/my_dialogue.ezd", state, "start")
@@ -190,7 +328,12 @@ func _run() -> void:
     # ... assertions ...
 ```
 
-Or use `DialogueTest.start_test` with a loaded JSON resource for `.json` files (the original approach).
+**C#:**
+```csharp
+_tester.SetStates(new());
+await _tester.StartTestFromEzd("res://dialogue/my_dialogue.ezd", "start");
+_tester.AssertResponse("Expected text.", new(), true);
+```
 
 ## Running Tests from Terminal
 

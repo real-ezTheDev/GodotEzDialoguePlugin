@@ -238,6 +238,7 @@ signal(trigger_animation,npc_bow)
 
 Your game connects to `custom_signal_received` and parses the string however it needs:
 
+**GDScript:**
 ```gdscript
 func _on_custom_signal_received(value: String):
     var parts = value.split(",")
@@ -248,6 +249,26 @@ func _on_custom_signal_received(value: String):
             state[parts[1]] = int(parts[2])
         "trigger_animation":
             npc.play_animation(parts[1])
+```
+
+**C#:**
+```csharp
+private void OnCustomSignalReceived(string value)
+{
+    var parts = value.Split(",");
+    switch (parts[0])
+    {
+        case "play_sound":
+            AudioManager.Play(parts[1]);
+            break;
+        case "set":
+            state[parts[1]] = int.Parse(parts[2]);
+            break;
+        case "trigger_animation":
+            npc.PlayAnimation(parts[1]);
+            break;
+    }
+}
 ```
 
 > **Tip:** Signals are processed synchronously — the dialogue does not advance until your signal handler returns. This means you can safely update state variables in a signal handler and the updated values will be available to any `$if` or `${ }` that follows on the same page.

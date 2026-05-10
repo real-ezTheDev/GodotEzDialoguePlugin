@@ -22,7 +22,11 @@ foreach ($suite in $config.test_suites) {
 
     Start-Process `
         -FilePath $godot `
-        -ArgumentList @("--headless", "--path", $project, "-s", $suite.script) `
+        -ArgumentList $(if ($suite.scene) {
+            @("--headless", "--path", $project, $suite.scene)
+        } else {
+            @("--headless", "--path", $project, "-s", $suite.script)
+        }) `
         -Wait -NoNewWindow `
         -RedirectStandardOutput $out `
         -RedirectStandardError  $err
