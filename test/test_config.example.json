@@ -1,5 +1,5 @@
 {
-    "godot_executable": "C:\\Program Files (x86)\\Godot\\dotnet\\Godot_v4.6.1-stable_mono_win64.exe",
+    "godot_executable": "C:\\Path\\To\\Your\\Godot_v4.x.x.exe",
     "test_suites": [
         {
             "name": "Dialogue Tests",
