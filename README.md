@@ -9,7 +9,7 @@ The Plugin provides ways to create and organize in-game dialogues by providing c
 - [Syntax Reference](SYNTAX_REFERENCE.md) — quick-lookup for every command, operator, and language rule
 - [EZD File Format](EZD_FORMAT.md) — the plain-text `.ezd` format for authoring dialogue outside the Godot editor
 - [Testing Guide](TESTING.md) — how to write automated tests for your dialogue flows
-- [VS Code Extension](vscode-ezd/) — syntax highlighting for `.ezd` files in VS Code / Kiro
+- [VS Code Extension](vscode-ezd/README.md) — syntax highlighting for `.ezd` files in VS Code / Kiro (includes install instructions)
 
 ## Requirement
 
