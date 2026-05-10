@@ -45,8 +45,14 @@ func get_parse() -> Array[DialogueCommand]:
 
 func get_display_texts():
 	var text = ""
-	for parseItem in get_parse():
+	var crawlStack = get_parse()
+	while !crawlStack.is_empty():
+		var parseItem = crawlStack.pop_front()
+		for child in parseItem.children:
+			crawlStack.push_front(child)
 		if parseItem.type == DialogueCommand.CommandType.DISPLAY_TEXT:
+			if !text.is_empty():
+				text += "\n"
 			text += parseItem.values[0]
 	return text.strip_edges(true, true)
 
