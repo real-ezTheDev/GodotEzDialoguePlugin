@@ -1,0 +1,13 @@
+{
+    "godot_executable": "C:\\Program Files (x86)\\Godot\\dotnet\\Godot_v4.6.1-stable_mono_win64.exe",
+    "test_suites": [
+        {
+            "name": "Dialogue Tests",
+            "script": "res://test/RunTests.gd"
+        },
+        {
+            "name": "Syntax Highlight Tests",
+            "script": "res://test/RunSyntaxHighlightTests.gd"
+        }
+    ]
+}

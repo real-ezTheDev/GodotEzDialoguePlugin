@@ -1,25 +1,28 @@
-$godot   = "C:\Program Files (x86)\Godot\dotnet\Godot_v4.6.1-stable_mono_win64.exe"
-$project = $PSScriptRoot | Split-Path -Parent
+$configPath = Join-Path $PSScriptRoot "test_config.json"
+$config     = Get-Content $configPath -Raw | ConvertFrom-Json
+$godot      = $config.godot_executable
+$project    = $PSScriptRoot | Split-Path -Parent
 
-$suites = @(
-    @{ Name = "Dialogue Tests";           Script = "res://test/RunTests.gd" },
-    @{ Name = "Syntax Highlight Tests";   Script = "res://test/RunSyntaxHighlightTests.gd" }
-)
+if (-not (Test-Path $godot)) {
+    Write-Host "ERROR: Godot executable not found at: $godot" -ForegroundColor Red
+    Write-Host "Update 'godot_executable' in test/test_config.json to match your system." -ForegroundColor Yellow
+    exit 1
+}
 
 $totalFailed = 0
 
-foreach ($suite in $suites) {
+foreach ($suite in $config.test_suites) {
     $out = [System.IO.Path]::GetTempFileName()
     $err = [System.IO.Path]::GetTempFileName()
 
     Write-Host ""
     Write-Host ("-" * 50) -ForegroundColor DarkGray
-    Write-Host " $($suite.Name)" -ForegroundColor White
+    Write-Host " $($suite.name)" -ForegroundColor White
     Write-Host ("-" * 50) -ForegroundColor DarkGray
 
     Start-Process `
         -FilePath $godot `
-        -ArgumentList @("--headless", "--path", $project, "-s", $suite.Script) `
+        -ArgumentList @("--headless", "--path", $project, "-s", $suite.script) `
         -Wait -NoNewWindow `
         -RedirectStandardOutput $out `
         -RedirectStandardError  $err
@@ -62,9 +65,9 @@ foreach ($suite in $suites) {
 Write-Host ""
 Write-Host ("=" * 50) -ForegroundColor DarkGray
 if ($totalFailed -eq 0) {
-    Write-Host " All $($suites.Count) test suites passed." -ForegroundColor Green
+    Write-Host " All $($config.test_suites.Count) test suites passed." -ForegroundColor Green
 } else {
-    Write-Host " $totalFailed of $($suites.Count) test suites had failures." -ForegroundColor Red
+    Write-Host " $totalFailed of $($config.test_suites.Count) test suites had failures." -ForegroundColor Red
 }
 Write-Host ("=" * 50) -ForegroundColor DarkGray
 
