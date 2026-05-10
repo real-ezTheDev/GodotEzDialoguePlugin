@@ -84,6 +84,8 @@ func _run_all_tests() -> void:
 		_test_string_equality_match,
 		_test_string_equality_no_match,
 		_test_case_insensitive_goto,
+		_test_brackets_in_plain_text,
+		_test_unescaped_brackets_in_text,
 	]
 
 	for test in tests:
@@ -430,3 +432,18 @@ func _test_case_insensitive_goto() -> void:
 	_tester.set_states({})
 	await _tester.start_test(_dialogue, "test_case_insensitive_goto")
 	_tester.assert_response("testing case insensitive goto.\nhigh target reached.", [], true)
+
+## Brackets in plain text — escaped { and } should render as literal characters
+func _test_brackets_in_plain_text() -> void:
+	_tester.set_states({})
+	await _tester.start_test(_dialogue, "test_brackets_in_plain_text")
+	_tester.assert_response(
+		"He said {hello} to the crowd.\nThe array is [1, 2, 3].\nParentheses (like this) are fine.",
+		[], true)
+
+## Unescaped brackets in plain text — { and } without escape should still
+## render as literal text when not preceded by $if/$else/$elif or ?>
+func _test_unescaped_brackets_in_text() -> void:
+	_tester.set_states({})
+	await _tester.start_test(_dialogue, "test_unescaped_brackets_in_text")
+	_tester.assert_response("He said {hello} to the crowd.", [], true)

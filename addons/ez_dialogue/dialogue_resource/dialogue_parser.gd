@@ -90,7 +90,10 @@ func _parse_statement(i: int, raw: String, parseProgress: Array[DialogueCommand]
 		return _parse_else(i, raw, parseProgress, currentLine, inLinePos)
 
 	# --- Opening bracket: { ---
-	elif _is_bracket_start(i, raw):
+	# Only treat { as a bracket when inside an existing bracket context (nested).
+	# Top-level { in plain text is treated as a literal character.
+	# Bracket creation for $if/$elif/$else/prompt is handled by their respective parsers.
+	elif _is_bracket_start(i, raw) and parseProgress[0].type == DialogueCommand.CommandType.BRACKET:
 		var bracket := DialogueCommand.new(
 			currentLine, inLinePos, DialogueCommand.CommandType.BRACKET)
 		parseProgress[0].children.push_back(bracket)
@@ -98,9 +101,8 @@ func _parse_statement(i: int, raw: String, parseProgress: Array[DialogueCommand]
 		return i + 1
 
 	# --- Closing bracket: } ---
-	elif _peek_and_match("}", i, raw):
-		if parseProgress[0].type == DialogueCommand.CommandType.BRACKET:
-			parseProgress.pop_front()
+	elif _peek_and_match("}", i, raw) and parseProgress[0].type == DialogueCommand.CommandType.BRACKET:
+		parseProgress.pop_front()
 		return i + 1
 
 	# --- Page break: --- ---
@@ -144,6 +146,7 @@ func _collect_plain_text(
 		return i + varMatch.get_string().length()
 
 	# Collect plain characters until we hit a special token.
+	var inside_bracket := parseProgress[0].type == DialogueCommand.CommandType.BRACKET
 	var j := i
 	while j < raw.length():
 		var c := raw[j]
@@ -160,9 +163,11 @@ func _collect_plain_text(
 			"$":
 				break
 			"{":
-				break
+				if inside_bracket:
+					break
 			"}":
-				break
+				if inside_bracket:
+					break
 			"s":
 				if _peek_and_match("signal(", j, raw):
 					break

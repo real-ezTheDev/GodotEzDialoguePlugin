@@ -1,0 +1,23 @@
+Welcome traveller, ${player_name}.
+You have ${gold} gold coins.
+---
+$if reputation >= 50 {
+    The guard nods respectfully.
+    ?> Ask about the quest -> quest_info
+    ?> Leave quietly {}
+}
+$elif reputation >= 20 {
+    The guard eyes you suspiciously.
+    signal(play_sfx,suspicious)
+    ?> Bribe the guard {
+        signal(set,gold,-10)
+        He pockets the coins.
+        -> quest_info
+    }
+    ?> Walk away -> town_square
+}
+$else {
+    Halt! You are not welcome here.
+    -> kicked_out
+}
+The sun sets behind the castle walls.

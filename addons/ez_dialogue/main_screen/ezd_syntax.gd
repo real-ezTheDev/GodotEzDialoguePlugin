@@ -19,7 +19,7 @@ var _variable_inject_regex: RegEx  # matches ${...} variable injections
 
 func _init():
 	_bracket_regex = RegEx.new()
-	_bracket_regex.compile("[{}()\\[\\]]")
+	_bracket_regex.compile("[{}]")
 
 	_signal_full_regex = RegEx.new()
 	_signal_full_regex.compile("signal\\(([\\s\\S]*?)\\)")
@@ -109,11 +109,29 @@ func _get_line_syntax_highlighting(line: int) -> Dictionary:
 					result[command.start_pos] = { "color": textColor }
 
 	# --- Bracket / paren coloring pass ---
-	# Runs on raw line text so it catches closing '}' which the parser doesn't
-	# emit as a command (it just pops the stack).
-	var bracketResults = _bracket_regex.search_all(lineText)
-	for match in bracketResults:
-		result[match.get_start()] = { "color": operatorColor }
+	# Only color brackets as operators on lines that contain structural commands
+	# ($if, $elif, $else, prompt, signal) or are bracket-only lines (just "}").
+	# Plain text brackets in dialogue should stay textColor.
+	var has_structural_command := false
+	if lineToCommand.has(line):
+		for cmd in lineToCommand.get(line):
+			if cmd.type == DialogueCommand.CommandType.CONDITIONAL \
+					or cmd.type == DialogueCommand.CommandType.ELIF \
+					or cmd.type == DialogueCommand.CommandType.ELSE \
+					or cmd.type == DialogueCommand.CommandType.PROMPT \
+					or cmd.type == DialogueCommand.CommandType.SIGNAL \
+					or cmd.type == DialogueCommand.CommandType.BRACKET:
+				has_structural_command = true
+				break
+
+	# A line with only "}" (possibly indented) is a structural bracket close.
+	if not has_structural_command and lineText.strip_edges() == "}":
+		has_structural_command = true
+
+	if has_structural_command:
+		var bracketResults = _bracket_regex.search_all(lineText)
+		for match in bracketResults:
+			result[match.get_start()] = { "color": operatorColor }
 
 	# --- signal(...) coloring pass ---
 	# Color "signal" keyword as specialColor, parens as operatorColor,
@@ -122,13 +140,15 @@ func _get_line_syntax_highlighting(line: int) -> Dictionary:
 	for match in signalResults:
 		# "signal" keyword
 		result[match.get_start()] = { "color": specialColor }
-		# opening "(" — already covered by bracket pass, but be explicit
+		# opening "("
 		var open_paren_pos = match.get_start() + 6  # len("signal") == 6
 		result[open_paren_pos] = { "color": operatorColor }
 		# params
 		if match.get_string(1).length() > 0:
 			result[open_paren_pos + 1] = { "color": textColor }
-		# closing ")" — bracket pass covers it
+		# closing ")"
+		var close_paren_pos = match.get_end() - 1
+		result[close_paren_pos] = { "color": operatorColor }
 
 	# --- ${variable} injection coloring pass ---
 	# Highlight variable placeholders distinctly from surrounding text.

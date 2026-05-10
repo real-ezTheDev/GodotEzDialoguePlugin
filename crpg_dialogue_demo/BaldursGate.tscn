@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://jxxxpejmg7i2"]
+[gd_scene format=3 uid="uid://jxxxpejmg7i2"]
 
 [ext_resource type="Texture2D" uid="uid://kdrd6nly07lk" path="res://crpg_dialogue_demo/lzel_bg.jpg" id="1_df57v"]
 [ext_resource type="Script" uid="uid://cenwns5hxpv5w" path="res://crpg_dialogue_demo/RollBox.gd" id="2_gl5rf"]
@@ -14,31 +14,31 @@ width = 252
 height = 252
 fill_to = Vector2(0, 1)
 
-[node name="BaldursGate" type="Node2D"]
+[node name="BaldursGate" type="Node2D" unique_id=354730337]
 
-[node name="Background" type="Sprite2D" parent="."]
+[node name="Background" type="Sprite2D" parent="." unique_id=965052722]
 position = Vector2(574, 327)
 scale = Vector2(1.5, 1.5)
 texture = ExtResource("1_df57v")
 
-[node name="RollBox" type="Node2D" parent="."]
+[node name="RollBox" type="Node2D" parent="." unique_id=978787731]
 visible = false
 position = Vector2(517, 155)
 script = ExtResource("2_gl5rf")
 
-[node name="TextureRect" type="TextureRect" parent="RollBox"]
+[node name="TextureRect" type="TextureRect" parent="RollBox" unique_id=411991737]
 offset_left = -67.0
 offset_top = -5.0
 offset_right = 185.0
 offset_bottom = 247.0
 texture = SubResource("GradientTexture2D_57a6p")
 
-[node name="CheckName" type="Label" parent="RollBox"]
+[node name="CheckName" type="Label" parent="RollBox" unique_id=1880771566]
 offset_right = 40.0
 offset_bottom = 23.0
 text = "Dexterity Check"
 
-[node name="DifficultyClass" type="Label" parent="RollBox"]
+[node name="DifficultyClass" type="Label" parent="RollBox" unique_id=1018998712]
 offset_left = 27.0
 offset_top = 55.0
 offset_right = 97.0
@@ -48,7 +48,7 @@ Class"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="DCNumber" type="Label" parent="RollBox"]
+[node name="DCNumber" type="Label" parent="RollBox" unique_id=1745158449]
 offset_left = 54.0
 offset_top = 115.0
 offset_right = 94.0
@@ -56,14 +56,14 @@ offset_bottom = 141.0
 text = "20
 "
 
-[node name="Button" type="Button" parent="RollBox"]
+[node name="Button" type="Button" parent="RollBox" unique_id=1438682590]
 offset_left = 16.0
 offset_top = 180.0
 offset_right = 114.0
 offset_bottom = 211.0
 text = "Click to Roll"
 
-[node name="DialogueBox" type="VBoxContainer" parent="."]
+[node name="DialogueBox" type="VBoxContainer" parent="." unique_id=1334514658]
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
@@ -79,7 +79,7 @@ alignment = 2
 script = ExtResource("3_bwnhg")
 dialogue = ExtResource("4_3jik3")
 
-[node name="text" type="Label" parent="DialogueBox"]
+[node name="text" type="Label" parent="DialogueBox" unique_id=1328999724]
 layout_mode = 2
 text = "testsetset
 asdfsdfasdfasdfasdf
@@ -89,7 +89,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
 
-[node name="EzDialogue" type="Node" parent="DialogueBox"]
+[node name="EzDialogue" type="Node" parent="DialogueBox" unique_id=667294962]
 script = ExtResource("5_wktls")
 
 [connection signal="roll_finished" from="RollBox" to="DialogueBox" method="_on_roll_box_roll_finished"]
