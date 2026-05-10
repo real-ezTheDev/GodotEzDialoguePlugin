@@ -49,14 +49,19 @@ func _on_ez_dialogue_dialogue_generated(response: DialogueResponse):
 		return
 
 	add_text(response.text)
+
+	if response.eod_reached:
+		dialogue_finished = true
+
 	if response.choices.is_empty():
 		add_choice("[...]", 0)
 	else:
 		for i in response.choices.size():
 			add_choice(response.choices[i], i)
 
-func _on_ez_dialogue_end_of_dialogue_reached():
-	dialogue_finished = true
+# Deprecated — kept for reference. Use response.eod_reached instead.
+#func _on_ez_dialogue_end_of_dialogue_reached():
+#	dialogue_finished = true
 
 func _on_ez_dialogue_custom_signal_received(value: String):
 	var params = value.split(",")

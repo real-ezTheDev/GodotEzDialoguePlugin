@@ -1,8 +1,8 @@
 @tool
 class_name EzDialogueReader extends Node
 
-## (This signal no longer triggers. Check DialogueResponse.eod_reached from
-## the dialogue_generated signal instead.)
+## (DEPRECATED — use DialogueResponse.eod_reached from the dialogue_generated signal instead.)
+## This signal still fires for backward compatibility but will be removed in a future version.
 ## @deprecated
 signal end_of_dialogue_reached()
 
