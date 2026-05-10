@@ -98,6 +98,7 @@ size_flags_vertical = 3
 script = ExtResource("2_6ptxg")
 
 [node name="SearchBar" type="Panel" parent="HSplitContainer/graph_container" unique_id=2070619133]
+visible = false
 custom_minimum_size = Vector2(0, 45)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_1vuf6")

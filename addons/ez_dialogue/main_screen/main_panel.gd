@@ -46,10 +46,13 @@ func _process(_delta):
 		last_parse_updated_time = Time.get_ticks_msec()
 
 func _unhandled_key_input(event: InputEvent):
-	if event is InputEventKey and event.pressed \
-			and event.ctrl_pressed and event.keycode == KEY_F:
-		search_text_input.grab_focus()
-		search_text_input.select_all()
+	if not (event is InputEventKey and event.pressed):
+		return
+	if event.ctrl_pressed and event.keycode == KEY_F:
+		_open_search_bar()
+		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_ESCAPE and search_bar.visible:
+		_close_search_bar()
 		get_viewport().set_input_as_handled()
 
 
@@ -379,6 +382,27 @@ func _on_working_path_changed(path: String):
 
 # ── Search ────────────────────────────────────────────────────────────────────
 
+func _open_search_bar():
+	search_bar.visible = true
+	search_text_input.grab_focus()
+	search_text_input.select_all()
+	if not search_text_input.gui_input.is_connected(_on_search_input_gui):
+		search_text_input.gui_input.connect(_on_search_input_gui)
+
+func _close_search_bar():
+	_clear_search()
+	search_text_input.clear()
+	search_bar.visible = false
+	# Clear the content editor's search highlight.
+	if content_editor.visible:
+		content_editor.set_search_text("")
+		content_editor.queue_redraw()
+
+func _on_search_input_gui(event: InputEvent):
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_close_search_bar()
+		get_viewport().set_input_as_handled()
+
 func _on_node_search_text_submitted(text: String):
 	if _search_results.is_empty() or text != _search_keyword:
 		return
@@ -458,3 +482,4 @@ func _select_graph_node_by_dialogue(dialogue: DialogueNode):
 func _highlight_search_in_editor(keyword: String):
 	if content_editor.visible:
 		content_editor.set_search_text(keyword)
+		content_editor.queue_redraw()
