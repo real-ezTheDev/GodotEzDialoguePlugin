@@ -362,6 +362,10 @@ func _on_draw_container_end_node_move():
 
 ######################### FILE HANDLING SIGNAL RESPONSES
 func _on_save_file_dialog_file_selected(path):
+	# Default to .ezd if no extension is specified.
+	if not path.ends_with(".ezd") and not path.ends_with(".json"):
+		path += ".ezd"
+
 	var resource: DialogueResource = DialogueResource.new()
 	resource.dialogue_nodes = dialogueNodes
 

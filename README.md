@@ -282,18 +282,25 @@ For a full command reference — every operator, truthy/falsy rule, nested varia
 ---
 
 ### Design Goals and Future Plans
-I believe between custom signal and other basic dialogue commands, there's a "round about" way to do pretty much anything one would desire. However, some of the "round about" solution might end up being very inconvenient, and I would like to resolve them as they come up. So, please feel free to share any thoughts and suggestions.
 
-As of right now, the immediate items on the roadmap are biased towards usage in my own game.
+I believe between custom signal and other basic dialogue commands, there's a "round about" way to do pretty much anything one would desire. However, some of the "round about" solution might end up being very inconvenient, and I would like to resolve them as they come up. So, please feel free to share any thoughts and suggestions.
 
 I personally believe writing as much as you can without taking short cuts in narrative is the best player experience. So, I want to develop the tool towards helping with that goal in mind.
 
 I do not wish for this tool to start over-reaching into another programming/scripting language, but focused on the goal of "writing dialogues and branch in full depth where nothing but my own creativity blocks the process."
 
-Having said this, my future features are:
-1. TAG in nodes to both quickly filter/search nodes I need to fix/continue writing.
-2. Flow reference - When in any given node, be able to quickly see what nodes could potentially reach the current node.
-3. Jump to earliest uhnadled branch - this is to pre plan a split and keep writing depth first for one specific branch and be able to retur nto the starting point and start writing next branch until all the branch has been handled.
-4. Syntax highlighting hardening (currently syntax highlighting of the format in the editor isn't really complete...)
-5. Bugs - there are bugs- some minor some major. While I really wish to provide support for the community to fix all the relevant bugs, unless I somehow find funding to spend extra time and effort on this tool - I would have to bias towards dealing with a "work around" if it exists and only a blocking bug for my own project would see a fix.
+#### Recently Completed
+- ✅ **Syntax highlighting hardening** — full overhaul with dedicated color categories, regex-based token detection, and 80+ automated tests
+- ✅ **C# support** — typed wrapper (`EzDialogueSharp`), test harness (`DialogueTestSharp`), full documentation
+- ✅ **`.ezd` plain-text format** — author dialogue outside the Godot editor with VS Code syntax highlighting
+- ✅ **`$elif` support** — multi-branch conditionals without nesting
+- ✅ **Cross-node search** — live search with graph highlighting and Ctrl+F shortcut
+- ✅ **Headless test runner** — automated testing from terminal with CI-friendly exit codes
+- ✅ **Bug fixes** — parser performance, conditional evaluation, bracket handling, GraphEdit compatibility
+
+#### Roadmap
+1. **Node tagging** — label nodes with tags to quickly filter and search by category (e.g. "unfinished", "needs-review", "side-quest")
+2. **Flow reference** — when editing a node, see which other nodes can reach it (incoming connections displayed in the UI)
+3. **Jump to earliest unhandled branch** — pre-plan a split, write depth-first on one branch, then jump back to the next unwritten branch
+4. **Undo/redo** — integrate with Godot's UndoRedo system for graph and editor actions
 
