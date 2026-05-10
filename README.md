@@ -5,8 +5,11 @@ EzDialogue is a Dialogue extension for Godot Game Engine.
 The Plugin provides ways to create and organize in-game dialogues by providing customized dialogue management tab in Godot Engine. Use EzDialogue's own scripting language to write dialogues, control narrative branches, and trigger custom in-game functions.
 
 **Documentation**
-- [Getting Started Guide](#) ← you are here
+- [Getting Started Guide](#writing-dialogue) — how to use the editor and wire up dialogue in your game (this page)
 - [Syntax Reference](SYNTAX_REFERENCE.md) — quick-lookup for every command, operator, and language rule
+- [EZD File Format](EZD_FORMAT.md) — the plain-text `.ezd` format for authoring dialogue outside the Godot editor
+- [Testing Guide](TESTING.md) — how to write automated tests for your dialogue flows
+- [VS Code Extension](vscode-ezd/) — syntax highlighting for `.ezd` files in VS Code / Kiro
 
 ## Requirement
 

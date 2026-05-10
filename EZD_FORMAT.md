@@ -26,7 +26,9 @@ The header must be on its own line. Everything between one header and the next (
 
 ## Body
 
-The body uses the existing EzDialogue scripting language:
+The body uses the existing EzDialogue scripting language. For a complete reference of every command, operator, and rule, see the **[Syntax Reference](SYNTAX_REFERENCE.md)**.
+
+Summary of available commands:
 
 - Plain text (displayed as dialogue)
 - `${variable}` — variable injection
