@@ -8,9 +8,6 @@ export.cfg
 export_presets.cfg
 *.import
 
-# Godot UID files (machine-generated, cause merge conflicts)
-*.uid
-
 # Imported translations (automatically generated from CSV files)
 *.translation
 
