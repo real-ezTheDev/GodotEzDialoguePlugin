@@ -19,6 +19,7 @@ mono_crash.*.json
 # .NET build artifacts (in case of non-default output paths)
 bin/
 obj/
+*.old
 
 # Editor/IDE settings (machine-specific)
 .vscode/

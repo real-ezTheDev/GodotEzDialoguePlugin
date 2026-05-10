@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="EzDialogue"
 run/main_scene="res://crpg_dialogue_demo/BaldursGate.tscn"
-config/features=PackedStringArray("4.6", "Forward Plus")
+config/features=PackedStringArray("4.6", "C#", "Forward Plus")
 config/icon="res://addons/ez_dialogue/icon.png"
 
 [dotnet]

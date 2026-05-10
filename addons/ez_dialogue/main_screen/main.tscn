@@ -31,16 +31,14 @@ script = ExtResource("1_qjims")
 
 [node name="SaveFileDialog" type="FileDialog" parent="." unique_id=816824356]
 initial_position = 2
-size = Vector2i(500, 500)
-unresizable = true
+size = Vector2i(800, 500)
 ok_button_text = "Save"
 filters = PackedStringArray("*.ezd", "*.json")
 
 [node name="OpenFileDialog" type="FileDialog" parent="." unique_id=232596295]
 title = "Open a File"
 initial_position = 2
-size = Vector2i(500, 500)
-unresizable = true
+size = Vector2i(800, 500)
 ok_button_text = "Open"
 file_mode = 0
 filters = PackedStringArray("*.ezd", "*.json")
