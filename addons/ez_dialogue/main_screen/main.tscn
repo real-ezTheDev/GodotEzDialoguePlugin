@@ -1,8 +1,8 @@
-[gd_scene load_steps=9 format=3 uid="uid://c4h2pps361nfk"]
+[gd_scene format=3 uid="uid://c4h2pps361nfk"]
 
-[ext_resource type="Script" uid="uid://ct3is1jerl48d" path="res://addons/ez_dialogue/main_screen/main_panel.gd" id="1_qjims"]
+[ext_resource type="Script" uid="uid://du141mo0er4m5" path="res://addons/ez_dialogue/main_screen/main_panel.gd" id="1_qjims"]
 [ext_resource type="Script" uid="uid://no41ehhy83ho" path="res://addons/ez_dialogue/main_screen/draw_container.gd" id="2_6ptxg"]
-[ext_resource type="FontFile" uid="uid://buwm2t0sdxgw" path="res://addons/ez_dialogue/main_screen/ProggyVector Regular.ttf" id="2_hauah"]
+[ext_resource type="FontFile" uid="uid://c6pw1huw1x2f1" path="res://addons/ez_dialogue/main_screen/ProggyVector Regular.ttf" id="2_hauah"]
 [ext_resource type="Script" uid="uid://ct83qpngp3k2d" path="res://addons/ez_dialogue/main_screen/name_editor.gd" id="2_tbf72"]
 [ext_resource type="Script" uid="uid://be2h6nfew3adu" path="res://addons/ez_dialogue/main_screen/ezd_syntax.gd" id="3_ew0wp"]
 [ext_resource type="Script" uid="uid://dqkcyn4pkpcmv" path="res://addons/ez_dialogue/main_screen/search_bar.gd" id="3_iwt5k"]
@@ -19,7 +19,7 @@ expressionColor = Color(0.6, 0.85, 0.5, 1)
 variableColor = Color(0.95, 0.78, 0.35, 1)
 metadata/_editor_prop_ptr_textColor = NodePath("")
 
-[node name="main" type="Panel"]
+[node name="main" type="Panel" unique_id=24131893]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -29,14 +29,14 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_qjims")
 
-[node name="SaveFileDialog" type="FileDialog" parent="."]
+[node name="SaveFileDialog" type="FileDialog" parent="." unique_id=816824356]
 initial_position = 2
 size = Vector2i(500, 500)
 unresizable = true
 ok_button_text = "Save"
 filters = PackedStringArray("*.ezd", "*.json")
 
-[node name="OpenFileDialog" type="FileDialog" parent="."]
+[node name="OpenFileDialog" type="FileDialog" parent="." unique_id=232596295]
 title = "Open a File"
 initial_position = 2
 size = Vector2i(500, 500)
@@ -45,7 +45,7 @@ ok_button_text = "Open"
 file_mode = 0
 filters = PackedStringArray("*.ezd", "*.json")
 
-[node name="HSplitContainer" type="HSplitContainer" parent="."]
+[node name="HSplitContainer" type="HSplitContainer" parent="." unique_id=1728319799]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -53,59 +53,59 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="graph_container" type="VBoxContainer" parent="HSplitContainer"]
+[node name="graph_container" type="VBoxContainer" parent="HSplitContainer" unique_id=358054567]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="HBoxContainer" type="HBoxContainer" parent="HSplitContainer/graph_container"]
+[node name="HBoxContainer" type="HBoxContainer" parent="HSplitContainer/graph_container" unique_id=1312580194]
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="add" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
+[node name="add" type="Button" parent="HSplitContainer/graph_container/HBoxContainer" unique_id=1165868582]
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "+"
 
-[node name="remove" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
+[node name="remove" type="Button" parent="HSplitContainer/graph_container/HBoxContainer" unique_id=423999346]
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "-"
 
-[node name="new" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
+[node name="new" type="Button" parent="HSplitContainer/graph_container/HBoxContainer" unique_id=925808546]
 layout_mode = 2
 text = "New"
 
-[node name="save" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
+[node name="save" type="Button" parent="HSplitContainer/graph_container/HBoxContainer" unique_id=1499532861]
 layout_mode = 2
 text = "Save"
 
-[node name="open" type="Button" parent="HSplitContainer/graph_container/HBoxContainer"]
+[node name="open" type="Button" parent="HSplitContainer/graph_container/HBoxContainer" unique_id=29724655]
 layout_mode = 2
 text = "Open"
 
-[node name="fileNameLbl" type="Label" parent="HSplitContainer/graph_container/HBoxContainer"]
+[node name="fileNameLbl" type="Label" parent="HSplitContainer/graph_container/HBoxContainer" unique_id=1885513502]
 layout_mode = 2
 text = "[no_name]"
 
-[node name="dirty_marker" type="Label" parent="HSplitContainer/graph_container/HBoxContainer"]
+[node name="dirty_marker" type="Label" parent="HSplitContainer/graph_container/HBoxContainer" unique_id=1278772548]
 visible = false
 layout_mode = 2
 text = "*"
 
-[node name="draw_container" type="GraphEdit" parent="HSplitContainer/graph_container"]
+[node name="draw_container" type="GraphEdit" parent="HSplitContainer/graph_container" unique_id=1115467078]
 layout_mode = 2
 size_flags_vertical = 3
 script = ExtResource("2_6ptxg")
 
-[node name="SearchBar" type="Panel" parent="HSplitContainer/graph_container"]
+[node name="SearchBar" type="Panel" parent="HSplitContainer/graph_container" unique_id=2070619133]
 custom_minimum_size = Vector2(0, 45)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_1vuf6")
 script = ExtResource("3_iwt5k")
 
-[node name="MarginContainer" type="MarginContainer" parent="HSplitContainer/graph_container/SearchBar"]
+[node name="MarginContainer" type="MarginContainer" parent="HSplitContainer/graph_container/SearchBar" unique_id=302965964]
 layout_mode = 0
 offset_right = 361.0
 offset_bottom = 28.0
@@ -113,31 +113,32 @@ theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="HBoxContainer" type="HBoxContainer" parent="HSplitContainer/graph_container/SearchBar/MarginContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="HSplitContainer/graph_container/SearchBar/MarginContainer" unique_id=677132306]
 layout_mode = 2
 
-[node name="FindLbl" type="Label" parent="HSplitContainer/graph_container/SearchBar/MarginContainer/HBoxContainer"]
+[node name="FindLbl" type="Label" parent="HSplitContainer/graph_container/SearchBar/MarginContainer/HBoxContainer" unique_id=1326544758]
 layout_mode = 2
 text = "Find :"
 vertical_alignment = 1
 
-[node name="LineEdit" type="LineEdit" parent="HSplitContainer/graph_container/SearchBar/MarginContainer/HBoxContainer"]
+[node name="LineEdit" type="LineEdit" parent="HSplitContainer/graph_container/SearchBar/MarginContainer/HBoxContainer" unique_id=1514650351]
 custom_minimum_size = Vector2(300, 35)
 layout_mode = 2
-placeholder_text = "Node Name"
+placeholder_text = "Search nodes..."
+keep_editing_on_text_submit = true
 expand_to_text_length = true
 
-[node name="NotFoundLbl" type="Label" parent="HSplitContainer/graph_container/SearchBar/MarginContainer/HBoxContainer"]
+[node name="NotFoundLbl" type="Label" parent="HSplitContainer/graph_container/SearchBar/MarginContainer/HBoxContainer" unique_id=2048042778]
 visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.807843, 0.188235, 0, 1)
 text = "Not Found!"
 
-[node name="edit_container" type="VBoxContainer" parent="HSplitContainer"]
+[node name="edit_container" type="VBoxContainer" parent="HSplitContainer" unique_id=338119416]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="name_editor" type="LineEdit" parent="HSplitContainer/edit_container"]
+[node name="name_editor" type="LineEdit" parent="HSplitContainer/edit_container" unique_id=95923339]
 visible = false
 layout_mode = 2
 size_flags_horizontal = 3
@@ -146,7 +147,7 @@ placeholder_text = "dialogue node name"
 editable = false
 script = ExtResource("2_tbf72")
 
-[node name="content_editor" type="CodeEdit" parent="HSplitContainer/edit_container"]
+[node name="content_editor" type="CodeEdit" parent="HSplitContainer/edit_container" unique_id=1979627955]
 visible = false
 layout_mode = 2
 size_flags_horizontal = 3

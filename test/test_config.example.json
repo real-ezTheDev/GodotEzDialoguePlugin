@@ -12,6 +12,10 @@
         {
             "name": "EZD Format Tests",
             "script": "res://test/RunEzdFormatTests.gd"
+        },
+        {
+            "name": "Editor Logic Tests",
+            "script": "res://test/RunEditorLogicTests.gd"
         }
     ]
 }

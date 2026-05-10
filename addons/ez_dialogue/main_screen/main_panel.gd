@@ -78,6 +78,13 @@ func _process(delta):
 		_update_parse()
 		last_parse_updated_time = Time.get_ticks_msec()
 
+func _unhandled_key_input(event: InputEvent):
+	if event is InputEventKey and event.pressed:
+		if event.ctrl_pressed and event.keycode == KEY_F:
+			search_text_input.grab_focus()
+			search_text_input.select_all()
+			get_viewport().set_input_as_handled()
+
 func _record_connection_tracker(_from: String, _to: String):
 	var from = _from.to_lower()
 	var to = _to.to_lower()
@@ -330,6 +337,12 @@ func _get_incoming_connection_names(graphNode: GraphNode) -> Array[DialogueNode]
 func _on_draw_container_node_selected(node):
 	selectedGraphNodes.push_front(node)
 	
+	# If this selection was triggered by a search jump, update the editor
+	# content but don't let it steal focus from the search input.
+	if _search_is_jumping:
+		_populate_editor_from_selections(selectedGraphNodes)
+		return
+	
 	_populate_editor_from_selections(selectedGraphNodes)
 	_on_content_editor_text_changed()
 
@@ -393,12 +406,101 @@ func _on_working_path_changed(path: String):
 		workingPath = path
 		$HSplitContainer/graph_container/HBoxContainer/fileNameLbl.text = workingPath
 
-func _on_node_search_text_submitted(node_name: String):
-	var dialogue_node: DialogueNode = _get_dialogue_node_by_name(node_name)
-	if dialogue_node:
-		draw_surface.center_on_node(dialogue_node)
+# ── Search state ──────────────────────────────────────────────────────────────
+var _search_results: Array[DialogueNode] = []
+var _search_index: int = -1
+var _search_keyword: String = ""
+var _search_is_jumping: bool = false
+
+func _on_node_search_text_submitted(new_text: String):
+	# Enter cycles to the next result when results already exist.
+	if !_search_results.is_empty() and new_text == _search_keyword:
+		_search_index = (_search_index + 1) % _search_results.size()
+		_jump_to_search_result()
+		search_bar.set_result_count(_search_results.size(), _search_index + 1)
+
+func _on_node_search_text_changed(new_text: String):
+	# Live search as the user types.
+	if new_text.is_empty():
+		_clear_search_highlights()
+		_search_results = []
+		_search_index = -1
+		_search_keyword = ""
+		search_bar.clear_warn()
+		return
+
+	# Rebuild results on every change.
+	_clear_search_highlights()
+	_search_keyword = new_text
+	_search_index = 0
+
+	var exact_match := _get_dialogue_node_by_name(new_text)
+	if exact_match:
+		_search_results = [exact_match]
 	else:
+		_search_results = _search_content_across_nodes(new_text)
+
+	if _search_results.is_empty():
 		search_bar.warn_not_found()
-	
-func _on_node_search_text_changed(node_name: String):
-	search_bar.clear_warn()
+		return
+
+	_apply_search_highlights()
+	search_bar.set_result_count(_search_results.size(), _search_index + 1)
+
+# Jump to the current search result: center graph, select node, highlight in editor.
+func _jump_to_search_result():
+	if _search_results.is_empty():
+		return
+	var target: DialogueNode = _search_results[_search_index]
+	draw_surface.center_on_node(target)
+	# Select the node without triggering the full editor population flow
+	# which steals focus from the search input.
+	_search_is_jumping = true
+	_select_graph_node_by_dialogue(target)
+	_search_is_jumping = false
+	_highlight_search_in_editor(_search_keyword)
+
+# Apply a highlight outline to all graph nodes that match the search.
+func _apply_search_highlights():
+	var matching_ids := {}
+	for node in _search_results:
+		matching_ids[node.id] = true
+
+	for child in draw_surface.get_children():
+		if child is GraphNode and matching_ids.has(child.get_meta("dialogue_id")):
+			var highlight_style := StyleBoxFlat.new()
+			highlight_style.bg_color = Color(0.3, 0.7, 1.0, 0.15)
+			highlight_style.border_color = Color(0.3, 0.7, 1.0, 0.8)
+			highlight_style.set_border_width_all(2)
+			highlight_style.set_corner_radius_all(4)
+			child.add_theme_stylebox_override("panel", highlight_style)
+
+# Remove highlight outlines from all graph nodes.
+func _clear_search_highlights():
+	for child in draw_surface.get_children():
+		if child is GraphNode:
+			child.remove_theme_stylebox_override("panel")
+
+# Search for a keyword in commands_raw across all dialogue nodes.
+# Returns an array of DialogueNodes that contain the keyword (case-insensitive).
+func _search_content_across_nodes(keyword: String) -> Array[DialogueNode]:
+	var results: Array[DialogueNode] = []
+	var lower_keyword := keyword.to_lower()
+	for node in dialogueNodes:
+		if node.commands_raw.to_lower().contains(lower_keyword):
+			results.push_back(node)
+		elif node.name.to_lower().contains(lower_keyword):
+			results.push_back(node)
+	return results
+
+# Select a graph node by its DialogueNode reference.
+func _select_graph_node_by_dialogue(dialogue: DialogueNode):
+	for child in draw_surface.get_children():
+		if child is GraphNode and child.get_meta("dialogue_id") == dialogue.id:
+			draw_surface.set_selected(child)
+			break
+
+# Highlight search term in the content editor using CodeEdit's built-in search.
+func _highlight_search_in_editor(keyword: String):
+	if content_editor.visible:
+		content_editor.set_search_text(keyword)
