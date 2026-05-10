@@ -21,10 +21,20 @@ Click [here](https://youtu.be/WVflfiKjXgk) for video tutorial/demo.
 
 ## Installation
 
-1. Copy the directory `./addon/ez-dialogue` to your Godot Project resource path `res://addon/`
-2. Open `Project > Project Settings...`, then goto  `Plugins` tab
-3. Under `Installed Plugins`, there should already be `DeveloperEzra's Dialogue Manager` already. Click to check `Enable` under status column for this plugin.
-4. There should be `EzDialogue` tab in your Editor now.
+1. Download or clone this repository.
+2. Copy the `addons/ez_dialogue/` folder into your Godot project so the path is:
+   ```
+   your_project/
+   └── addons/
+       └── ez_dialogue/
+           ├── plugin.cfg
+           ├── ez_dialogue.gd
+           └── ...
+   ```
+   > **Common mistake:** If you downloaded the ZIP from GitHub, don't copy the entire extracted folder. The ZIP extracts to `GodotEzDialoguePlugin-main/` — you need the `addons/ez_dialogue/` folder from *inside* it, not the wrapper folder.
+3. Open `Project > Project Settings...`, then go to the `Plugins` tab.
+4. Find `DeveloperEzra's Dialogue Manager` and set its status to `Enable`.
+5. The `EzDialogue` tab should now appear in your editor.
 
 ## Writing Dialogue
 
