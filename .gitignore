@@ -19,8 +19,8 @@ export_presets.cfg
 data_*/
 mono_crash.*.json
 
-# Editor/IDE settings (machine-specific paths)
-.vscode/settings.json
+# Editor/IDE settings (machine-specific)
+.vscode/
 .kiro/
 
 # Test config (contains machine-specific Godot path)
