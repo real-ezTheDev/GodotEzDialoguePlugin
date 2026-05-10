@@ -8,6 +8,7 @@ The Plugin provides ways to create and organize in-game dialogues by providing c
 - [Getting Started Guide](#writing-dialogue) — how to use the editor and wire up dialogue in your game (this page)
 - [Syntax Reference](SYNTAX_REFERENCE.md) — quick-lookup for every command, operator, and language rule
 - [EZD File Format](EZD_FORMAT.md) — the plain-text `.ezd` format for authoring dialogue outside the Godot editor
+- [Localization Guide](LOCALIZATION.md) — how to tokenize, translate, and serve dialogue in multiple languages
 - [Testing Guide](TESTING.md) — how to write automated tests for your dialogue flows
 - [VS Code Extension](vscode-ezd/README.md) — syntax highlighting for `.ezd` files in VS Code / Kiro (includes install instructions)
 
@@ -290,6 +291,7 @@ I personally believe writing as much as you can without taking short cuts in nar
 I do not wish for this tool to start over-reaching into another programming/scripting language, but focused on the goal of "writing dialogues and branch in full depth where nothing but my own creativity blocks the process."
 
 #### Recently Completed
+- ✅ **Localization support** — tokenize dialogue strings, export/import CSV translations, runtime locale switching with variable injection support ([guide](LOCALIZATION.md))
 - ✅ **Syntax highlighting hardening** — full overhaul with dedicated color categories, regex-based token detection, and 80+ automated tests
 - ✅ **C# support** — typed wrapper (`EzDialogueSharp`), test harness (`DialogueTestSharp`), full documentation
 - ✅ **`.ezd` plain-text format** — author dialogue outside the Godot editor with VS Code syntax highlighting

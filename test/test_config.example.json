@@ -16,6 +16,30 @@
         {
             "name": "Editor Logic Tests",
             "script": "res://test/RunEditorLogicTests.gd"
+        },
+        {
+            "name": "Tokenizer Tests",
+            "script": "res://test/RunTokenizerTests.gd"
+        },
+        {
+            "name": "Localization Integration Tests",
+            "script": "res://test/RunLocalizationIntegrationTests.gd"
+        },
+        {
+            "name": "Localization Tokenizer PBT",
+            "script": "res://test/RunTokenizerPBT.gd"
+        },
+        {
+            "name": "Localization Translation PBT",
+            "script": "res://test/RunTranslationPBT.gd"
+        },
+        {
+            "name": "C# Integration Tests",
+            "scene": "res://test/CSharpTest.tscn"
+        },
+        {
+            "name": "C# Localization Tests",
+            "scene": "res://test/CSharpLocalizationTest.tscn"
         }
     ]
 }

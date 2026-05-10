@@ -24,6 +24,19 @@ var _pending_choice_actions: Array
 var _stateReference: Dictionary
 var _current_response: DialogueResponse
 
+# Localization state
+var _translation_tables: Dictionary = {}   # { locale_string: { token: translated_text } }
+var _active_locale: String = ""
+
+# Per-dialogue token index built on start_dialogue()
+# Maps: normalized_node_name → { "display": [token1, token2, ...], "choice": [token1, ...] }
+var _current_token_index: Dictionary = {}
+
+# Runtime counters (reset per node traversal)
+var _display_counter: int = 0
+var _choice_counter: int = 0
+var _current_node_normalized: String = ""
+
 # Precompiled regex — avoids recompiling on every text/expression evaluation.
 var _placeholder_regex := _compile("\\${(\\S+?)}")
 var _nested_key_regex := _compile("(\"\\S+?\")")
@@ -67,12 +80,19 @@ func _process(_delta: float) -> void:
 ## Start processing dialogue. Accepts JSON (legacy), String path to .ezd, or Resource.
 func start_dialogue(dialogue, state: Dictionary, starting_node_name: String = "start") -> void:
 	_load_dialogue(dialogue)
+	# Build token index for translation lookup if a locale is active
+	if not _active_locale.is_empty():
+		_build_token_index()
+	else:
+		_current_token_index = {}
 	var node := _processing_dialogue.get_node_by_name(starting_node_name)
 	_executing_command_stack = node.get_parse()
 	_pending_choice_actions = []
 	_current_response = null
 	dialogue_visit_history = [node.name]
 	_stateReference = state
+	# Initialize node counters for the starting node
+	_reset_node_counters(node.name)
 	is_running = true
 
 ## Advance to the next page or select a choice.
@@ -88,6 +108,101 @@ func next(choice_index: int = 0) -> void:
 	is_running = true
 
 
+# ── Localization API ──────────────────────────────────────────────────────────
+
+## Set the Translation Table for a given locale.
+func set_translation_table(locale: String, table: Dictionary) -> void:
+	_translation_tables[locale] = table
+
+## Get the Translation Table for a given locale (returns empty Dict if none loaded).
+func get_translation_table(locale: String) -> Dictionary:
+	return _translation_tables.get(locale, {})
+
+## Clear the Translation Table for a given locale.
+func clear_translation_table(locale: String) -> void:
+	_translation_tables.erase(locale)
+
+## Set the active locale for translation lookups. Empty string disables translation.
+func set_locale(locale: String) -> void:
+	_active_locale = locale
+	# Build token index if dialogue is already loaded and locale is being activated
+	if not _active_locale.is_empty() and _processing_dialogue != null and _current_token_index.is_empty():
+		_build_token_index()
+
+## Get the current active locale.
+func get_locale() -> String:
+	return _active_locale
+
+## Load a Translation Table from a CSV file for the given locale.
+## Uses DialogueTokenizer.import_csv() internally.
+## Returns OK on success, or ERR_FILE_CANT_OPEN if the file cannot be read.
+func load_translation_csv(locale: String, file_path: String) -> Error:
+	var result := DialogueTokenizer.new().import_csv(file_path)
+	if result.is_empty():
+		return ERR_FILE_CANT_OPEN
+	set_translation_table(locale, result)
+	return OK
+
+
+# ── Translation helpers ────────────────────────────────────────────────────────
+
+## Look up a token in the active translation table and return translated text,
+## or the original text if no translation is available.
+func _translate_text(token: String, original: String) -> String:
+	if _active_locale.is_empty():
+		return original
+	var table = _translation_tables.get(_active_locale, {})
+	var translated = table.get(token, "")
+	if translated.is_empty():
+		return original
+	return translated
+
+## Build the internal token index from the current DialogueResource.
+## Maps normalized_node_name → { "display": [token1, ...], "choice": [token1, ...] }
+func _build_token_index() -> void:
+	_current_token_index = {}
+	if _processing_dialogue == null:
+		return
+	var tokenizer := DialogueTokenizer.new()
+	for node in _processing_dialogue.dialogue_nodes:
+		var normalized_name := node.name.to_lower().replace(" ", "_")
+		var display_tokens: Array[String] = []
+		var choice_tokens: Array[String] = []
+		var entries := tokenizer.tokenize_node(node)
+		for entry in entries:
+			var token_str: String = entry["token"]
+			if token_str.find("_choice_") != -1:
+				choice_tokens.append(token_str)
+			else:
+				display_tokens.append(token_str)
+		_current_token_index[normalized_name] = {
+			"display": display_tokens,
+			"choice": choice_tokens
+		}
+
+## Reset per-node counters and set the current node for token tracking.
+func _reset_node_counters(node_name: String) -> void:
+	_current_node_normalized = node_name.to_lower().replace(" ", "_")
+	_display_counter = 0
+	_choice_counter = 0
+
+## Get the current display token based on the counter, or return empty string.
+func _get_current_display_token() -> String:
+	var node_data = _current_token_index.get(_current_node_normalized, {})
+	var tokens = node_data.get("display", [])
+	if _display_counter > 0 and _display_counter <= tokens.size():
+		return tokens[_display_counter - 1]
+	return ""
+
+## Get the current choice token based on the counter, or return empty string.
+func _get_current_choice_token() -> String:
+	var node_data = _current_token_index.get(_current_node_normalized, {})
+	var tokens = node_data.get("choice", [])
+	if _choice_counter > 0 and _choice_counter <= tokens.size():
+		return tokens[_choice_counter - 1]
+	return ""
+
+
 # ── Command processing ────────────────────────────────────────────────────────
 
 func _process_command(command: DialogueCommand, response: DialogueResponse) -> void:
@@ -100,13 +215,22 @@ func _process_command(command: DialogueCommand, response: DialogueResponse) -> v
 
 		DialogueCommand.CommandType.DISPLAY_TEXT:
 			var text: String = (command.values[0] as String).strip_edges(true, true)
+			_display_counter += 1
+			var token := _get_current_display_token()
+			if not token.is_empty():
+				text = _translate_text(token, text)
 			response.append_text(_inject_variables(text))
 
 		DialogueCommand.CommandType.PAGE_BREAK:
 			is_running = false
 
 		DialogueCommand.CommandType.PROMPT:
-			var prompt: String = _inject_variables(command.values[0]).strip_edges()
+			var prompt: String = command.values[0].strip_edges()
+			_choice_counter += 1
+			var choice_token := _get_current_choice_token()
+			if not choice_token.is_empty():
+				prompt = _translate_text(choice_token, prompt)
+			prompt = _inject_variables(prompt)
 			var actions: Array[DialogueCommand] = []
 			actions.append_array(command.children)
 			response.append_choice(prompt)
@@ -116,6 +240,7 @@ func _process_command(command: DialogueCommand, response: DialogueResponse) -> v
 			var dest := _processing_dialogue.get_node_by_name(command.values[0])
 			_executing_command_stack = dest.get_parse()
 			_push_history(dest.name)
+			_reset_node_counters(dest.name)
 
 		DialogueCommand.CommandType.CONDITIONAL, DialogueCommand.CommandType.ELIF:
 			if _evaluate_expression(command.values[0]):

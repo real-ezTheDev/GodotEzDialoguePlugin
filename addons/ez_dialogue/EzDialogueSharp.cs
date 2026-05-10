@@ -118,4 +118,96 @@ public partial class EzDialogueSharp : Node
     {
         EmitSignal(SignalName.EndOfDialogueReached);
     }
+
+    // --- Localization API ---
+
+    /// <summary>
+    /// Tokenize a DialogueResource and return structured token entries.
+    /// Each entry contains: token, source_text, node_name, index.
+    /// </summary>
+    /// <param name="resource">The DialogueResource to tokenize.</param>
+    /// <returns>An array of dictionaries representing token entries.</returns>
+    public Godot.Collections.Array<Godot.Collections.Dictionary> Tokenize(Resource resource)
+    {
+        return (Godot.Collections.Array<Godot.Collections.Dictionary>)_gdReader.Call("tokenize", resource);
+    }
+
+    /// <summary>
+    /// Tokenize a single DialogueNode and return its token entries.
+    /// </summary>
+    /// <param name="node">The DialogueNode resource to tokenize.</param>
+    /// <returns>An array of dictionaries representing token entries for that node.</returns>
+    public Godot.Collections.Array<Godot.Collections.Dictionary> TokenizeNode(Resource node)
+    {
+        return (Godot.Collections.Array<Godot.Collections.Dictionary>)_gdReader.Call("tokenize_node", node);
+    }
+
+    /// <summary>
+    /// Export tokens to a CSV file at the given path.
+    /// </summary>
+    /// <param name="resource">The DialogueResource to export tokens from.</param>
+    /// <param name="filePath">The file path to write the CSV to.</param>
+    /// <returns>OK on success, appropriate error code on failure.</returns>
+    public Error ExportCsv(Resource resource, string filePath)
+    {
+        return (Error)(long)_gdReader.Call("export_csv", resource, filePath);
+    }
+
+    /// <summary>
+    /// Import translations from a CSV file for a given locale.
+    /// </summary>
+    /// <param name="locale">The locale identifier (e.g. "fr", "ja").</param>
+    /// <param name="filePath">The file path to the CSV translation file.</param>
+    /// <returns>OK on success, appropriate error code on failure.</returns>
+    public Error ImportCsv(string locale, string filePath)
+    {
+        return (Error)(long)_gdReader.Call("import_csv", locale, filePath);
+    }
+
+    /// <summary>
+    /// Set the Translation Table for a given locale.
+    /// </summary>
+    /// <param name="locale">The locale identifier (e.g. "fr", "ja").</param>
+    /// <param name="table">A dictionary mapping token strings to translated text strings.</param>
+    public void SetTranslationTable(string locale, Godot.Collections.Dictionary table)
+    {
+        _gdReader.Call("set_translation_table", locale, table);
+    }
+
+    /// <summary>
+    /// Get the Translation Table for a given locale.
+    /// </summary>
+    /// <param name="locale">The locale identifier to retrieve the table for.</param>
+    /// <returns>A dictionary mapping token strings to translated text strings, or empty if none loaded.</returns>
+    public Godot.Collections.Dictionary GetTranslationTable(string locale)
+    {
+        return (Godot.Collections.Dictionary)_gdReader.Call("get_translation_table", locale);
+    }
+
+    /// <summary>
+    /// Clear the Translation Table for a given locale.
+    /// </summary>
+    /// <param name="locale">The locale identifier to clear.</param>
+    public void ClearTranslationTable(string locale)
+    {
+        _gdReader.Call("clear_translation_table", locale);
+    }
+
+    /// <summary>
+    /// Set the active locale for translation lookups.
+    /// </summary>
+    /// <param name="locale">The locale identifier to activate. Empty string disables translation.</param>
+    public void SetLocale(string locale)
+    {
+        _gdReader.Call("set_locale", locale);
+    }
+
+    /// <summary>
+    /// Get the current active locale.
+    /// </summary>
+    /// <returns>The currently active locale string, or empty if translation is disabled.</returns>
+    public string GetLocale()
+    {
+        return (string)_gdReader.Call("get_locale");
+    }
 }
