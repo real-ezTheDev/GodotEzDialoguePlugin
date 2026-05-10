@@ -30,7 +30,7 @@ func _parse_statement(i: int, raw: String, parseProgress: Array[DialogueCommand]
 		if i + 1 >= raw.length():
 			return i + 1
 		_add_letters_progress(
-			raw[i] + raw[i + 1],
+			raw[i + 1],
 			parseProgress[0].children,
 			currentLine, inLinePos,
 			DialogueCommand.CommandType.DISPLAY_TEXT)
@@ -338,7 +338,7 @@ func _parse_prompt_command(i: int, raw: String, promptCommand: DialogueCommand) 
 	if _peek_and_match("\\", i, raw):
 		if i + 1 >= raw.length():
 			return i + 1
-		promptCommand.values[0] += raw[i] + raw[i + 1]
+		promptCommand.values[0] += raw[i + 1]
 		return _parse_prompt_command(i + 2, raw, promptCommand)
 	elif _peek_and_match("${", i, raw):
 		# Variable injection inside prompt label — collect and append.

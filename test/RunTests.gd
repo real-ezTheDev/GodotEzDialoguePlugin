@@ -70,6 +70,20 @@ func _run_all_tests() -> void:
 		_issue18_second_pass_expression_replacement_test,
 		_test_dead_end_choice,
 		_test_not_conditional,
+		_test_elif_high,
+		_test_elif_mid,
+		_test_elif_low,
+		_test_escape_characters,
+		_test_variable_in_choice_label,
+		_test_page_break,
+		_test_choice_inline_commands,
+		_test_numeric_variable_injection,
+		_test_numeric_comparisons_high,
+		_test_numeric_comparisons_exact,
+		_test_numeric_comparisons_low,
+		_test_string_equality_match,
+		_test_string_equality_no_match,
+		_test_case_insensitive_goto,
 	]
 
 	for test in tests:
@@ -324,3 +338,95 @@ func _test_not_conditional() -> void:
 	state.erase("some_variable")
 	await _tester.start_test(_dialogue, "test_not_conditional_display")
 	_tester.assert_response("Resulting texts are\nSome variable is FALSE.", [], true)
+
+
+# ── New test cases ────────────────────────────────────────────────────────────
+
+## $elif — first branch taken (level >= 10)
+func _test_elif_high() -> void:
+	_tester.set_states({"level": 15})
+	await _tester.start_test(_dialogue, "test_elif")
+	_tester.assert_response("level check\nhigh level.", [], true)
+
+## $elif — middle branch taken (level >= 5 but < 10)
+func _test_elif_mid() -> void:
+	_tester.set_states({"level": 7})
+	await _tester.start_test(_dialogue, "test_elif")
+	_tester.assert_response("level check\nmid level.", [], true)
+
+## $elif — else branch taken (level < 5)
+func _test_elif_low() -> void:
+	_tester.set_states({"level": 2})
+	await _tester.start_test(_dialogue, "test_elif")
+	_tester.assert_response("level check\nlow level.", [], true)
+
+## Escape characters — \$if, \-> rendered as plain text
+func _test_escape_characters() -> void:
+	_tester.set_states({})
+	await _tester.start_test(_dialogue, "test_escape_characters")
+	_tester.assert_response("$if this is not a command.\n-> neither is this.\nPrice is 100 gold.", [], true)
+
+## Variable injection inside a choice label
+func _test_variable_in_choice_label() -> void:
+	_tester.set_states({"player_name": "Ezra", "destination": "the tavern"})
+	await _tester.start_test(_dialogue, "test_variable_in_choice")
+	_tester.assert_response("Hello Ezra, pick one.", ["Go to the tavern"])
+
+## Page break splits dialogue into two pages
+func _test_page_break() -> void:
+	_tester.set_states({})
+	await _tester.start_test(_dialogue, "test_page_break")
+	_tester.assert_response("page one text.", [], false)
+	await _tester.resume_without_choice()
+	_tester.assert_response("page two text.", [], true)
+
+## Choice with inline commands: signal + text + goto
+func _test_choice_inline_commands() -> void:
+	_tester.set_states({})
+	await _tester.start_test(_dialogue, "test_choice_inline_commands")
+	_tester.assert_response("pick an action.", ["do stuff", "skip"])
+	await _tester.resume_with_choice(0)
+	_tester.assert_custom_signal("action,done")
+	_tester.assert_response("stuff was done.\nhigh target reached.", [], true)
+
+## Numeric variable injection (int and float)
+func _test_numeric_variable_injection() -> void:
+	_tester.set_states({"score": 42, "coins": 3.5})
+	await _tester.start_test(_dialogue, "test_numeric_variable_injection")
+	_tester.assert_response("Your score is 42 points.\nYou have 3.5 coins.", [], true)
+
+## Numeric comparison: > 50
+func _test_numeric_comparisons_high() -> void:
+	_tester.set_states({"score": 75})
+	await _tester.start_test(_dialogue, "test_numeric_comparisons")
+	_tester.assert_response("checking comparisons.\nhigh score.", [], true)
+
+## Numeric comparison: == 50
+func _test_numeric_comparisons_exact() -> void:
+	_tester.set_states({"score": 50})
+	await _tester.start_test(_dialogue, "test_numeric_comparisons")
+	_tester.assert_response("checking comparisons.\nexact score.", [], true)
+
+## Numeric comparison: < 50
+func _test_numeric_comparisons_low() -> void:
+	_tester.set_states({"score": 25})
+	await _tester.start_test(_dialogue, "test_numeric_comparisons")
+	_tester.assert_response("checking comparisons.\nlow score.", [], true)
+
+## String equality: matches
+func _test_string_equality_match() -> void:
+	_tester.set_states({"name": "hero"})
+	await _tester.start_test(_dialogue, "test_string_equality")
+	_tester.assert_response("checking string equality.\nyou are the hero.", [], true)
+
+## String equality: does not match
+func _test_string_equality_no_match() -> void:
+	_tester.set_states({"name": "villain"})
+	await _tester.start_test(_dialogue, "test_string_equality")
+	_tester.assert_response("checking string equality.\nyou are not the hero.", [], true)
+
+## Case-insensitive goto: -> TEST_ELIF_TARGET_HIGH resolves to test_elif_target_high
+func _test_case_insensitive_goto() -> void:
+	_tester.set_states({})
+	await _tester.start_test(_dialogue, "test_case_insensitive_goto")
+	_tester.assert_response("testing case insensitive goto.\nhigh target reached.", [], true)
