@@ -192,8 +192,12 @@ func _process_node_out_connection_on_graph(node: DialogueNode):
 
 func _remove_out_going_connection(nodeName: String):
 	for connection in draw_surface.get_connection_list():
-		if connection["from_node"] == nodeName.to_lower():
-			draw_surface.disconnect_node(nodeName.to_lower(), 0, connection["to_node"].to_lower(), 0)
+		# Support both old ("from_node"/"to_node") and new ("from"/"to") key formats
+		# across different Godot 4.x versions.
+		var from_key := "from_node" if connection.has("from_node") else "from"
+		var to_key := "to_node" if connection.has("to_node") else "to"
+		if connection[from_key] == nodeName.to_lower():
+			draw_surface.disconnect_node(nodeName.to_lower(), 0, connection[to_key].to_lower(), 0)
 	
 ######################### UI SIGNAL RESPONSES
 func _on_add_pressed():
@@ -316,8 +320,10 @@ func _update_parse():
 func _get_incoming_connection_names(graphNode: GraphNode) -> Array[DialogueNode]:
 	var result: Array[DialogueNode] = []
 	for connection in draw_surface.get_connection_list():
-		if connection["to_node"] == graphNode.name:
-			result.push_back(_get_dialogue_node_by_name(connection["from_node"]))
+		var from_key := "from_node" if connection.has("from_node") else "from"
+		var to_key := "to_node" if connection.has("to_node") else "to"
+		if connection[to_key] == graphNode.name:
+			result.push_back(_get_dialogue_node_by_name(connection[from_key]))
 	return result
 
 ######################### GRAPH NODE SIGNAL RESPONSES
