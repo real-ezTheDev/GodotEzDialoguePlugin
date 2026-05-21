@@ -6,7 +6,7 @@ class_name EzdFileParser extends RefCounted
 ## The .ezd format uses [node: name] headers to separate dialogue nodes.
 ## See EZD_FORMAT.md for the full specification.
 
-const NODE_HEADER_PATTERN := "^\\[node:\\s*([^,\\]]+)(?:,\\s*position:\\s*([\\d.]+)\\s*,\\s*([\\d.]+))?\\s*\\]$"
+const NODE_HEADER_PATTERN := "^\\[node:\\s*([^,\\]]+)(?:,\\s*position:\\s*(-?[\\d.]+)\\s*,\\s*(-?[\\d.]+))?\\s*\\]$"
 
 var _header_regex: RegEx
 
