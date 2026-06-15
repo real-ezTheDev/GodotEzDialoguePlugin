@@ -37,6 +37,15 @@ Click [here](https://youtu.be/WVflfiKjXgk) for video tutorial/demo.
 4. Find `DeveloperEzra's Dialogue Manager` and set its status to `Enable`.
 5. The `EzDialogue` tab should now appear in your editor.
 
+## Exporting
+
+`.ezd` files are plain text loaded at runtime by path, so Godot's exporter would
+normally strip them from a build (they aren't imported resources). While the
+plugin is enabled it **automatically bundles every `.ezd` file into your export**
+— you don't need to add an "include filter" to your export preset. If dialogue
+works in the editor but silently fails in an exported build, confirm the plugin
+is enabled.
+
 ## Writing Dialogue
 
 To begin writing your dialogue, go to `EzDialogue` tab.
